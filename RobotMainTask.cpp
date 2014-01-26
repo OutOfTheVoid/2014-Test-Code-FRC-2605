@@ -31,7 +31,7 @@ RobotMainTask :: RobotMainTask ():
 	Drive -> SetPreScale ( 1, 1 );
 
 	Drive -> SetInverted ( false, true, false, true );
-	Drive -> SetSineInversion ( true );
+	Drive -> SetSineInversion ( false );
 
 	Drive -> Disable ();
 

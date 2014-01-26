@@ -13,16 +13,16 @@ class ExponentialFilter : public Filter
 {
 public:
 
-	ExponentialFilter ( double expt );
+	ExponentialFilter ( double Exponent );
 	~ExponentialFilter ();
 
-	void SetExponent ( double expt );
+	void SetExponent ( double Exponent );
 
-	double Compute ( double value );
+	double Compute ( double Value );
 
 private:
 
-	double exponent;
+	double Exponent;
 
 };
 

@@ -5,10 +5,10 @@
 * FRC Team Sehome Semonsters 2605
 */
 
-ExponentialFilter :: ExponentialFilter ( double expt )
+ExponentialFilter :: ExponentialFilter ( double Exponent )
 {
 
-	SetExponent ( expt );
+	SetExponent ( Exponent );
 
 };
 
@@ -16,17 +16,17 @@ ExponentialFilter :: ~ExponentialFilter ()
 {
 };
 
-void ExponentialFilter :: SetExponent ( double expt )
+void ExponentialFilter :: SetExponent ( double Exponent )
 {
 
-	exponent = expt;
+	this -> Exponent = Exponent;
 
 };
 
-double ExponentialFilter :: Compute ( double value )
+double ExponentialFilter :: Compute ( double Value )
 {
 
-	bool sign = ( value < 0 );
-	return fabs ( pow ( value, exponent ) ) * ( sign ? - 1.0f : 1.0f );
+	bool Sign = ( Value < 0 );
+	return fabs ( pow ( Value, Exponent ) ) * ( Sign ? - 1.0f : 1.0f );
 
 };

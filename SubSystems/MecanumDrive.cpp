@@ -3,72 +3,80 @@
 
 /*
 * Copyright (C) 2014 Liam Taylor
-* FRC Team Sehome Semonsters 2605
+* WheelFRC Team Sehome Semonsters 2605
 */
 
-MecanumDrive :: MecanumDrive ( SpeedController * fl, SpeedController * fr, SpeedController * rl, SpeedController * rr )
+/**
+* Constructor
+*
+* @param WheelFL Front-left wheel speed controller
+* @param WheelFR Front-right wheel speed controller
+* @param WheelRL Rear-left wheel speed controller
+* @param WheelRR Rear-right wheel speed controller
+*/
+MecanumDrive :: MecanumDrive ( SpeedController * WheelFL, SpeedController * WheelFR, SpeedController * WheelRL, SpeedController * WheelRR )
 {
 	
-	MFL.Motor = fl;
-	MFR.Motor = fr;
-	MRL.Motor = rl;
-	MRR.Motor = rr;
+	MotorFL.Motor = WheelFL;
+	MotorFR.Motor = WheelFR;
+	MotorRL.Motor = WheelRL;
+	MotorRR.Motor = WheelRR;
 	
-	MFL.Inverted = false;
-	MFR.Inverted = false;
-	MRL.Inverted = false;
-	MRR.Inverted = false;
+	MotorFL.Inverted = false;
+	MotorFR.Inverted = false;
+	MotorRL.Inverted = false;
+	MotorRR.Inverted = false;
 	
-	tx = 0;
-	ty = 0;
-	tr = 0;
+	TX = 0;
+	TY = 0;
+	TR = 0;
 	
-	prescale_t = 1;
-	prescale_r = 1;
+	PrescaleT = 1;
+	PrescaleR = 1;
 	
-	scale = 1;
+	Scale = 1;
 	
-	sineInverted = false;
+	SineInverted = false;
 
-	enabled = false;
+	Enabled = false;
 	
 };
 
 MecanumDrive :: ~MecanumDrive () {};
 
-void MecanumDrive :: SetMotors ( SpeedController * fl, SpeedController * fr, SpeedController * rl, SpeedController * rr )
+void MecanumDrive :: SetMotors ( SpeedController * WheelFL, SpeedController * WheelFR, SpeedController * WheelRL, SpeedController * WheelRR )
 {
 	
-	if ( enabled )
+	if ( Enabled )
 		return;
 
-	MFL.Motor = fl;
-	MFR.Motor = fr;
-	MRL.Motor = rl;
-	MRR.Motor = rr;
+	MotorFL.Motor = WheelFL;
+	MotorFR.Motor = WheelFR;
+	MotorRL.Motor = WheelRL;
+	MotorRR.Motor = WheelRR;
 	
 };
 
-void MecanumDrive :: SetInverted ( bool fl, bool fr, bool rl, bool rr )
+void MecanumDrive :: SetInverted ( bool WheelFL, bool WheelFR, bool WheelRL, bool WheelRR )
 {
 	
-	if ( enabled )
+	if ( Enabled )
 		return;
 
-	MFL.Inverted = fl;
-	MFR.Inverted = fr;
-	MRL.Inverted = rl;
-	MRR.Inverted = rr;
+	MotorFL.Inverted = WheelFL;
+	MotorFR.Inverted = WheelFR;
+	MotorRL.Inverted = WheelRL;
+	MotorRR.Inverted = WheelRR;
 	
 };
 
 bool MecanumDrive :: Enable ()
 {
 	
-	if ( MFL.Motor == NULL || MFR.Motor == NULL || MRL.Motor == NULL || MRR.Motor == NULL )
+	if ( MotorFL.Motor == NULL || MotorFR.Motor == NULL || MotorRL.Motor == NULL || MotorRR.Motor == NULL )
 		return false;
 
-	enabled = true;
+	Enabled = true;
 	return true;
 	
 };
@@ -76,11 +84,11 @@ bool MecanumDrive :: Enable ()
 void MecanumDrive :: Disable ()
 {
 	
-	enabled = false;
+	Enabled = false;
 	
-	tx = 0;
-	ty = 0;
-	tr = 0;
+	TX = 0;
+	TY = 0;
+	TR = 0;
 	
 	PushTransform ();
 	
@@ -89,7 +97,7 @@ void MecanumDrive :: Disable ()
 bool MecanumDrive :: GetEnabled ()
 {
 	
-	return enabled;
+	return Enabled;
 	
 };
 
@@ -101,30 +109,30 @@ void MecanumDrive :: PushTransform ()
 	double SinCalc;
 	double CosCalc;
 	
-	if ( ! enabled )
+	if ( ! Enabled )
 	{
 		
-		MFL.Motor -> Set ( 0 );
-		MFR.Motor -> Set ( 0 );
-		MRL.Motor -> Set ( 0 );
-		MRR.Motor -> Set ( 0 );
+		MotorFL.Motor -> Set ( 0 );
+		MotorFR.Motor -> Set ( 0 );
+		MotorRL.Motor -> Set ( 0 );
+		MotorRR.Motor -> Set ( 0 );
 		
 		return;
 	
 	}
 		
-	ForceMagnitude = sqrt ( tx * tx + ty * ty );
+	ForceMagnitude = sqrt ( TX * TX + TY * TY );
 	
-	ForceAngle = atan2 ( tx, ty );
+	ForceAngle = atan2 ( TX, TY );
 	ForceAngle += PI_Div_4;
 	
 	SinCalc = sin ( ForceAngle ) * ForceMagnitude;
 	CosCalc = cos ( ForceAngle ) * ForceMagnitude;
 
-	MFL.Motor -> Set ( ( ( sineInverted ? CosCalc : SinCalc ) + tr ) * ( MFL.Inverted ? - scale : scale ) );
-	MFR.Motor -> Set ( ( ( CosCalc ) - tr ) * ( MFR.Inverted ? - scale : scale ) );
-	MRL.Motor -> Set ( ( ( sineInverted ? SinCalc : CosCalc ) + tr ) * ( MRL.Inverted ? - scale : scale ) );
-	MRR.Motor -> Set ( ( ( SinCalc ) - tr ) * ( MRR.Inverted ? - scale : scale ) );
+	MotorFL.Motor -> Set ( ( ( SineInverted ? CosCalc : SinCalc ) + TR ) * ( MotorFL.Inverted ? - Scale : Scale ) );
+	MotorFR.Motor -> Set ( ( ( SineInverted ? SinCalc : CosCalc ) - TR ) * ( MotorFR.Inverted ? - Scale : Scale ) );
+	MotorRL.Motor -> Set ( ( ( SineInverted ? SinCalc : CosCalc ) + TR ) * ( MotorRL.Inverted ? - Scale : Scale ) );
+	MotorRR.Motor -> Set ( ( ( SineInverted ? CosCalc : SinCalc ) - TR ) * ( MotorRR.Inverted ? - Scale : Scale ) );
 	
 };
 
@@ -136,79 +144,79 @@ void MecanumDrive :: DebugValues ()
 	double SinCalc;
 	double CosCalc;
 	
-	double flw, frw, rlw, rrw;
+	double FL, FR, RL, RR;
 	
-	ForceMagnitude = sqrt ( tx * tx + ty * ty );
+	ForceMagnitude = sqrt ( TX * TX + TY * TY );
 	
-	ForceAngle = atan2 ( tx, ty );
+	ForceAngle = atan2 ( TX, TY );
 	ForceAngle += PI_Div_4;
 	
 	SinCalc = sin ( ForceAngle ) * ForceMagnitude;
 	CosCalc = cos ( ForceAngle ) * ForceMagnitude;
 	
-	flw = ( ( sineInverted ? CosCalc : SinCalc ) + tr ) * ( MFL.Inverted ? - scale : scale );
-	frw = ( ( CosCalc ) - tr ) * ( MFR.Inverted ? - scale : scale );
-	rlw = ( ( sineInverted ? SinCalc : CosCalc ) + tr ) * ( MRL.Inverted ? - scale : scale );
-	rrw = ( ( SinCalc ) - tr ) * ( MRR.Inverted ? - scale : scale );
+	FL = ( ( SineInverted ? CosCalc : SinCalc ) + TR ) * ( MotorFL.Inverted ? - Scale : Scale );
+	FR = ( ( SineInverted ? SinCalc : CosCalc ) - TR ) * ( MotorFR.Inverted ? - Scale : Scale );
+	RL = ( ( SineInverted ? SinCalc : CosCalc ) + TR ) * ( MotorRL.Inverted ? - Scale : Scale );
+	RR = ( ( SineInverted ? CosCalc : SinCalc ) - TR ) * ( MotorRR.Inverted ? - Scale : Scale );
 	
-	printf ( "[ Mecanum Drive Debug ]\n%s\nInput X: %4.4f\nInput Y: %4.4f\nInput R: %4.4f\n[%+4.4f]---[%+4.4f]\n   |         |   \n   |         |   \n   |         |   \n   |         |   \n   |         |   \n   |         |   \n[%+4.4f]---[%+4.4f]\n", ( enabled ? "Enabled." : "Disabled." ), tx, ty, tr, flw, frw, rlw, rrw );
+	printf ( "[ Mecanum Drive Debug ]\n%s\nInput X: %4.4f\nInput Y: %4.4f\nInput R: %4.4f\n[%+4.4f]---[%+4.4f]\n   |         |   \n   |         |   \n   |         |   \n   |         |   \n   |         |   \n   |         |   \n[%+4.4f]---[%+4.4f]\n", ( Enabled ? "Enabled." : "Disabled." ), TX, TY, TR, FL, FR, RL, RR );
 	
 };
 
 void MecanumDrive :: SetMotorScale ( double s )
 {
 	
-	scale = s;
+	Scale = s;
 	
 };
 
 double MecanumDrive :: GetMotorScale ()
 {
 	
-	return scale;
+	return Scale;
 	
 };
 
-void MecanumDrive :: SetPreScale ( double translation, double rotation )
+void MecanumDrive :: SetPreScale ( double Translation, double Rotation )
 {
 
-	prescale_t = translation;
-	prescale_r = rotation;
+	PrescaleT = Translation;
+	PrescaleR = Rotation;
 	
 };
 
 double MecanumDrive :: GetPreScaleRotation ()
 {
 	
-	return prescale_r;
+	return PrescaleR;
 	
 };
 
 double MecanumDrive :: GetPreScaleTranslation ()
 {
 	
-	return prescale_t;
+	return PrescaleT;
 	
 };
 
-void MecanumDrive :: SetTranslation ( double x, double y )
+void MecanumDrive :: SetTranslation ( double X, double Y )
 {
 	
-	tx = x * prescale_t;
-	ty = y * prescale_t;
+	TX = X * PrescaleT;
+	TY = Y * PrescaleT;
 	
 };
 
-void MecanumDrive :: SetRotation ( double r )
+void MecanumDrive :: SetRotation ( double R )
 {
 	
-	tr = r * prescale_r;
+	TR = R * PrescaleR;
 	
 };
 
-void MecanumDrive :: SetSineInversion ( bool si = false )
+void MecanumDrive :: SetSineInversion ( bool SineInverted = false )
 {
 	
-	sineInverted = !si;
+	this -> SineInverted = SineInverted;
 	
 };

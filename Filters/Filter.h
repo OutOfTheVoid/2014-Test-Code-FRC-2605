@@ -12,7 +12,7 @@ public:
 
 	virtual ~Filter () {};
 
-	virtual double Compute ( double value ) = 0;
+	virtual double Compute ( double Value ) = 0;
 
 };
 

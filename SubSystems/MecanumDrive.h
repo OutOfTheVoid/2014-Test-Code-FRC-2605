@@ -22,51 +22,42 @@ typedef struct
 class MecanumDrive
 {
 public:
-	
-	//Constructor. Takes four speed controllers
-	MecanumDrive ( SpeedController * fl, SpeedController * fr, SpeedController * rl, SpeedController * rr );
+
+	MecanumDrive ( SpeedController * WwheelFL, SpeedController * WheelFR, SpeedController * WheelRL, SpeedController * WheelRR );
 	~MecanumDrive ();
 	
-	//Change motors
-	void SetMotors ( SpeedController * fl, SpeedController * fr, SpeedController * rl, SpeedController * rr );
+	void SetMotors ( SpeedController * WwheelFL, SpeedController * WheelFR, SpeedController * WheelRL, SpeedController * WheelRR );
 	
-	//Invert motors
-	void SetInverted ( bool fl, bool fr, bool rl, bool rr );
-	
-	//Enable or disable drive
+	void SetInverted ( bool FL, bool FR, bool RL, bool RR );
+
 	bool Enable ();
 	void Disable ();
 	
-	//Get the enabled state
 	bool GetEnabled ();
 	
-	//Set/Get motor output multiplier
 	void SetMotorScale ( double s );
 	double GetMotorScale ();
 	
-	//Get/Set prescale constants
-	void SetPreScale ( double translation, double rotation );
+	void SetPreScale ( double Translation, double Rotation );
 	double GetPreScaleTranslation ();
 	double GetPreScaleRotation ();
 	
-	//Set speeds
-	void SetTranslation ( double x, double y );
-	void SetRotation ( double r );
+	void SetTranslation ( double X, double Y );
+	void SetRotation ( double R );
 	
-	//Enable/Disable sin/cos switch. Can fix problem if inversion doesn't fix problems.
-	void SetSineInversion ( bool si );
+	void SetSineInversion ( bool Inverted );
 
-	//Print out debug using printf. Shows IO and enabled status.
 	void DebugValues ();
 	
-	//Push transform to controllers
 	void PushTransform ();
 	
 private:
 	
-	MecMotor MFL, MFR, MRL, MRR;
-	double tx, ty, tr, scale, prescale_r, prescale_t;
-	bool enabled, sineInverted;
+	MecMotor MotorFL, MotorFR, MotorRL, MotorRR;
+	
+	double TX, TY, TR, Scale, PrescaleR, PrescaleT;
+
+	bool Enabled, SineInverted;
 	
 };
 
