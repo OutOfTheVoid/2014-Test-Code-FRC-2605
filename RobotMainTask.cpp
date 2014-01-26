@@ -10,7 +10,6 @@ RobotMainTask :: RobotMainTask ():
 {
 
 	JagServer = new CANJaguarServer ();
-
 	JagServer -> Start ();
 
 	WheelJagConfig.Mode = CANJaguar :: kSpeed;

@@ -10,7 +10,13 @@
 #include "Util/JaguarUtils.h"
 #include "Util/Vector.h"
 
-#define CANJAGSERVER_NON_IMPERATIVE_WAIT_TIME 5000
+#define CANJAGSERVER_PARSE_TIMEOUT_DEFAULT 5000
+#define CANJAGSERVER_COMMAND_TIMEOUT_DEFAULT 0
+
+#define CANJAGSERVER_MESSAGEQUEUE_LENGTH 200
+
+#define CANJAGSERVER_PRIORITY Task :: kDefaultPriority
+#define CANJAGSERVER_STACKSIZE 0x20000
 
 typedef int32_t CAN_ID;
 
@@ -18,8 +24,12 @@ class CANJaguarServer
 {
 public:
 
-	CANJaguarServer ();
+	CANJaguarServer ( bool DoBrownOutCHeck = true, uint32_t ParseTimeout = CANJAGSERVER_PARSE_TIMEOUT_DEFAULT, uint32_t CommandTimeout = CANJAGSERVER_COMMAND_TIMEOUT_DEFAULT );
 	~CANJaguarServer ();
+
+	void SetParseMessageTimeout ( uint32_t ParseTimeout );
+	void SetCommandMessageTimeout ( uint32_t CommandTimeout );
+	void SetBrownOutCheckEnabled ( bool DoBrownOutCheck );
 
 	bool Start ();
 	void Stop ();
@@ -115,6 +125,10 @@ private:
 	SEM_ID ResponseSemaphore;
 
 	uint32_t RunLoopCounter;
+
+	uint32_t ParseWait;
+	uint32_t CommandWait;
+	bool CheckJags;
 
 	Vector <ServerCanJagInfo> * Jags;
 

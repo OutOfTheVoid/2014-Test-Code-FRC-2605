@@ -7,14 +7,22 @@
 
 /**
 * Constructor
+*
+* @param DoBrownOutCheck Whether or not to peridoically check if any Jaguars on the List have browned-out.
+* @param ParseTimeout How many system ticks to lock the message loop while no messages are queued before moving on to Brown-out detection or re-trying.
+* @param CommandTimeout How many system ticks to lock a command waiting on the message queue to have space.
 */
-CANJaguarServer :: CANJaguarServer ()
+CANJaguarServer :: CANJaguarServer ( bool DoBrownOutCheck, uint32_t ParseTimeout, uint32_t CommandTimeout )
 {
+
+	CheckJags = DoBrownOutCheck;
+	ParseWait = ParseTimeout;
+	CommandWait = CommandTimeout;
 
 	Running = false;
 
 	// Server task. _StartServerTask calls this -> RunLoop.
-	ServerTask = new Task ( "CANJaguarServer_Task", (FUNCPTR) & _StartServerTask );
+	ServerTask = new Task ( "CANJaguarServer_Task", (FUNCPTR) & _StartServerTask, CANJAGSERVER_PRIORITY, CANJAGSERVER_STACKSIZE );
 
 	// Array for Server Jaguar Information structures.
 	Jags = new Vector <ServerCanJagInfo> ();
@@ -35,6 +43,42 @@ CANJaguarServer :: ~CANJaguarServer ()
 };
 
 /**
+* Set the message loop receive timout.
+*
+* @param ParseTimeout How many system ticks to lock the message loop while no messages are queued before moving on to Brown-out detection or re-trying.
+*/
+void CANJaguarServer :: SetParseMessageTimeout ( uint32_t ParseTimeout )
+{
+
+	ParseWait = ParseTimeout;
+
+};
+
+/**
+* Set the command send timeout.
+*
+* CommandTimeout How many system ticks to lock a command waiting on the message queue to have space.
+*/
+void CANJaguarServer :: SetCommandMessageTimeout ( uint32_t CommandTimeout )
+{
+
+	CommandWait = CommandTimeout;
+
+};
+
+/**
+* Enable or disable brown-Out betection.
+*
+* @param DoBrownOutCheck Whether or not to enable brown-out checking.
+*/
+void CANJaguarServer :: SetBrownOutCheckEnabled ( bool DoBrownOutCheck )
+{
+
+	CheckJags = DoBrownOutCheck;
+
+};
+
+/**
 * Start the server. 
 *
 * You need to call this before anything that passes messages.
@@ -43,14 +87,14 @@ bool CANJaguarServer :: Start ()
 {
 
 	// Message Send Queue - A cross-thread command queue to direct the server thread.
-	MessageSendQueue = msgQCreate ( 256, sizeof ( CanJagServerMessage * ), MSG_Q_FIFO );
+	MessageSendQueue = msgQCreate ( CANJAGSERVER_MESSAGEQUEUE_LENGTH, sizeof ( CanJagServerMessage * ), MSG_Q_FIFO );
 
 	// Handle error
 	if ( MessageSendQueue == NULL )
 		return false;
 
 	// Message Response Queue - A cross-thread response queue to get the server thread's responses.
-	MessageReceiveQueue = msgQCreate ( 256, sizeof ( CanJagServerMessage * ), MSG_Q_FIFO );
+	MessageReceiveQueue = msgQCreate ( 10, sizeof ( CanJagServerMessage * ), MSG_Q_FIFO );
 
 	// Handle Error
 	if ( MessageReceiveQueue == NULL )
@@ -110,7 +154,7 @@ bool CANJaguarServer :: Start ()
 void CANJaguarServer :: Stop ()
 {
 
-	// Make sure no command call is waiting on a response. Protects the caller from a deadlock.
+	// Make sure no command call is waiting on a response. Protects the commanding thread from a deadlock.
 	semTake ( ResponseSemaphore, WAIT_FOREVER );
 
 	ServerTask -> Stop ();
@@ -262,7 +306,7 @@ void CANJaguarServer :: EnableJag ( CAN_ID ID )
 	Message -> Command = SEND_MESSAGE_JAG_ENABLE;
 	Message -> Data = (void *) ID;
 
-	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CANJAGSERVER_NON_IMPERATIVE_WAIT_TIME, MSG_PRI_NORMAL ) == ERROR );
+	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
 };
 
@@ -287,7 +331,7 @@ void CANJaguarServer :: SetJag ( CAN_ID ID, double Speed, uint8_t SyncGroup )
 	Message -> Command = SEND_MESSAGE_JAG_SET;
 	Message -> Data = (void *) SJMessage;
 
-	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CANJAGSERVER_NON_IMPERATIVE_WAIT_TIME, MSG_PRI_NORMAL ) == ERROR );
+	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
 };
 
@@ -311,7 +355,7 @@ void CANJaguarServer :: AddJag ( CAN_ID ID, CANJagConfigInfo Configuration )
 	Message -> Command = SEND_MESSAGE_JAG_ADD;
 	Message -> Data = (void *) AJMessage;
 
-	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CANJAGSERVER_NON_IMPERATIVE_WAIT_TIME, MSG_PRI_NORMAL ) == ERROR );
+	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
 };
 
@@ -334,7 +378,7 @@ void CANJaguarServer :: ConfigJag ( CAN_ID ID, CANJagConfigInfo Configuration )
 	Message -> Command = SEND_MESSAGE_JAG_CONFIG;
 	Message -> Data = (void *) CJMessage;
 
-	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CANJAGSERVER_NON_IMPERATIVE_WAIT_TIME, MSG_PRI_NORMAL ) == ERROR );
+	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
 };
 
@@ -432,7 +476,7 @@ void CANJaguarServer :: RemoveJag ( CAN_ID ID )
 	Message -> Command = SEND_MESSAGE_JAG_REMOVE;
 	Message -> Data = (void *) ID;
 
-	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CANJAGSERVER_NON_IMPERATIVE_WAIT_TIME, MSG_PRI_NORMAL ) == ERROR );
+	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
 };
 
@@ -447,18 +491,18 @@ void CANJaguarServer :: RunLoop ()
 
 	uint32_t RunLoopCounter = 0;
 	uint32_t JagLoopCounter = 0;
-	CANJagServerMessage * Message; 
+	CANJagServerMessage * Message;
+
+	CAN_ID ID;
+	bool Conflict = false;
 
 	while ( true )
 	{
 		
 		RunLoopCounter ++;
 
-		if ( msgQReceive ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CANJAGSERVER_NON_IMPERATIVE_WAIT_TIME ) != ERROR )
+		if ( msgQReceive ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), ParseWait ) != ERROR )
 		{
-
-			CAN_ID ID;
-			bool Conflict = false;
 
 			switch ( Message -> Command )
 			{
@@ -739,7 +783,7 @@ void CANJaguarServer :: RunLoop ()
 
 		}
 
-		if ( RunLoopCounter & 0xF == 0 )
+		if ( ( RunLoopCounter & 0xF == 0 ) && CheckJags )
 		{
 
 			if ( JagLoopCounter >= Jags -> GetLength () )
