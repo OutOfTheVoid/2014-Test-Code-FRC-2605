@@ -4,4 +4,4 @@ My name is Liam Taylor, and i'm the Programming Department's Head for my FRC tea
 
 See License.txt for Usage Constraints
 
-Questions? Please email Me at Liam.tab@gmail.com
+Questions? Please email me at Liam.tab@gmail.com
