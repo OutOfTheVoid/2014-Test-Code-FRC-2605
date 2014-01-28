@@ -496,7 +496,7 @@ double CANJaguarServer :: GetJag ( CAN_ID ID )
 };
 
 //WARNING: Not sure if this one functions at the moment.
-void CANJaguarServer :: GetJagBusVoltage ( CAN_ID ID )
+double CANJaguarServer :: GetJagBusVoltage ( CAN_ID ID )
 {
 
 	// Due to needing a response from the server thread, we must aquire the ResponseSemaphore so it doesn't preumpt a currently operating JAG_GET
@@ -608,8 +608,10 @@ void CANJaguarServer :: RunLoop ()
 	uint32_t JagLoopCounter = 0;
 	CANJagServerMessage * Message;
 
+	// Possibly used case independant variables.
 	CAN_ID ID;
 	bool Conflict = false;
+	CANJagServerMessage * SendMessage;
 
 	double PreJagCheckTime = Timer :: GetPPCTimestamp () - JagCheckInterval;
 	double PreCANCheckTime = Timer :: GetPPCTimestamp () - CANUpdateInterval;
@@ -845,7 +847,6 @@ void CANJaguarServer :: RunLoop ()
 
 						// Retreive JAG_GET CAN_ID.
 						ID = static_cast <CAN_ID> ( Message -> Data );
-						CANJagServerMessage * SendMessage;
 
 						// Find appropriate Jaguar.
 						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
@@ -861,7 +862,7 @@ void CANJaguarServer :: RunLoop ()
 								GetCANJagMessage * JVMessage = new GetCANJagMessage ();
 
 								JVMessage -> ID = JagInfo.ID;
-								JVMessage -> Speed = JagInfo.Jag -> Get ();
+								JVMessage -> Value = JagInfo.Jag -> Get ();
 
 								SendMessage -> Command = SEND_MESSAGE_JAG_GET;
 								SendMessage -> Data = reinterpret_cast <uint32_t> ( JVMessage );
@@ -917,17 +918,10 @@ void CANJaguarServer :: RunLoop ()
 
 						break;
 
-					default:
-
-						delete Message;
-
-						break;
-
 					case SEND_MESSAGE_JAG_GET_BUS_VOLTAGE:
 
 						// Retreive JAG_GET_BUS_VOLTAGE CAN_ID.
 						ID = static_cast <CAN_ID> ( Message -> Data );
-						CANJagServerMessage * SendMessage;
 
 						// Find appropriate Jaguar.
 						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
@@ -939,15 +933,15 @@ void CANJaguarServer :: RunLoop ()
 							{
 
 								// Respond with CANJaguar :: GetBusVoltage ()
-								CANJagServerMessage * ResponseMessage = new CANJagServerMessage ();
+								SendMessage = new CANJagServerMessage ();
 
 								GetCANJagBusVoltageMessage * GJBVMessage = new GetCANJagBusVoltageMessage ();
 
-								ResponseMessage -> Command = SEND_MESSAGE_JAG_GET_BUS_VOLTAGE;
-								ResponseMessage -> Data = reinterpret_cast <uint32_t> ( GJBVMessage );
-
 								GJBVMessage -> Value = JagInfo.Jag -> GetBusVoltage ();
 								GJBVMessage -> ID = ID;
+
+								SendMessage -> Command = SEND_MESSAGE_JAG_GET_BUS_VOLTAGE;
+								SendMessage -> Data = reinterpret_cast <uint32_t> ( GJBVMessage );
 
 								msgQSend ( MessageReceiveQueue, reinterpret_cast <char *> ( & SendMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT );
 
@@ -956,6 +950,12 @@ void CANJaguarServer :: RunLoop ()
 							}
 
 						}
+
+						delete Message;
+
+						break;
+
+					default:
 
 						delete Message;
 
