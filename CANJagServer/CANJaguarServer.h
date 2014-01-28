@@ -54,6 +54,8 @@ public:
 	void SetJag ( CAN_ID ID, double Speed, uint8_t SyncGroup = 0 );
 	double GetJag ( CAN_ID ID );
 
+	double GetJagBusVoltage ( CAN_ID ID );
+
 	bool CheckSendError ();
 	void ClearSendError ();
 
@@ -73,6 +75,7 @@ public:
 		SEND_MESSAGE_JAG_REMOVE,
 		SEND_MESSAGE_JAG_CONFIG,
 		SEND_MESSAGE_JAG_UPDATE_SYNC_GROUP,
+		SEND_MESSAGE_JAG_GET_BUS_VOLTAGE,
 
 	};
 
@@ -116,9 +119,11 @@ public:
 	{
 
 		CAN_ID ID;
-		double Speed;
+		double Value;
 
 	};
+
+	typedef GetCANJagMessage GetCANJagBusVoltageMessage;
 
 private:
 
