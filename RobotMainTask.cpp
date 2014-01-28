@@ -5,6 +5,8 @@
 * FRC Team Sehome Semonsters 2605
 */
 
+// TODO: Add some sort of synchonization for MecanumDrive stuff, sort out how to do vision.
+
 RobotMainTask :: RobotMainTask ():
 	WheelJagConfig ()
 {
