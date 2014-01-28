@@ -526,9 +526,9 @@ void CANJaguarServer :: GetJagBusVoltage ( CAN_ID ID )
 		return 0;
 
 	// Parse and check response message. Not sure how i'm going to handle this if something inconsistent ends up happening. Could be a response-locked semaphore, but then there's no point in using messaging.
-	GetCANJagBusVoltageMessage * GBVMessage = (GetCANJagBusVoltageMessage *) ReceiveMessage -> Data;
+	GetCANJagBusVoltageMessage * GBVMessage = reinterpret_cast <GetCANJagBusVoltageMessage *> ( ReceiveMessage -> Data );
 
-	if ( GMessage != NULL )
+	if ( GBVMessage != NULL )
 	{
 
 		// Acutally a response from JAG_GET_BUS_VOLTAGE?
