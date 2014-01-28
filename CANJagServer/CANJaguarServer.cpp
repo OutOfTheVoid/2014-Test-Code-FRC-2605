@@ -5,25 +5,33 @@
 * FRC Team Sehome Semonsters 2605
 */
 
+/*
+* Note: I realize this code is a bit allocation-heavy. It was the quickest way i though of to pass a constant-length message through VxWorks's MessageQueues.
+* I may update it to use a copied structure in the future, or have some sort of FIFO/Ringbuffer allocation system. I'm not sure whether it's more overhead
+* to pass a large message through the Queue or just pass a pointer and deal with allocation/deallocation, but one nice thing is that i don't have to worry
+* about alignment or unions with this approach. Anyway, it works for now, and i'm getting oh so tired of dealing with c++.
+*/
+
 /**
 * Constructor
 *
 * @param DoBrownOutCheck Whether or not to peridoically check if any Jaguars on the List have browned-out.
+* @param BrownOutCheckInterval How much time should pass between each successive brown-out check. (Set this higher if the canbus starts complaining.)
 * @param ParseTimeout How many system ticks to lock the message loop while no messages are queued before moving on to Brown-out detection or re-trying.
+* that if your code updates motors frequently, setting this value too low will allow the message queue to fill up more quickly.)
 * @param CommandTimeout How many system ticks to lock a command waiting on the message queue to have space.
+* @
 */
-CANJaguarServer :: CANJaguarServer ( bool DoBrownOutCheck, double BrownOutCheckInterval, uint32_t ParseTimeout, uint32_t CommandTimeout )
+CANJaguarServer :: CANJaguarServer ( bool DoBrownOutCheck, double BrownOutCheckInterval, double CANBusUpdateInterval, uint32_t CommandTimeout, uint32_t ParseTimeout )
 {
 
 	JagCheckInterval = BrownOutCheckInterval;
+	CANUpdateInterval = CANBusUpdateInterval;
 	CheckJags = DoBrownOutCheck;
 	ParseWait = ParseTimeout;
 	CommandWait = CommandTimeout;
 
 	Running = false;
-
-	//Jaguar Check Interval Timer
-	JagCheckTimer = new Timer ();
 
 	// Server task. _StartServerTask calls this -> RunLoop.
 	ServerTask = new Task ( "CANJaguarServer_Task", (FUNCPTR) & _StartServerTask, CANJAGSERVER_PRIORITY, CANJAGSERVER_STACKSIZE );
@@ -43,7 +51,6 @@ CANJaguarServer :: ~CANJaguarServer ()
 
 	delete ServerTask;
 	delete Jags;
-	delete JagCheckTimer;
 
 };
 
@@ -91,7 +98,21 @@ void CANJaguarServer :: SetBrownOutCheckEnabled ( bool DoBrownOutCheck )
 void CANJaguarServer :: SetJagCheckInterval ( double Interval )
 {
 
+	// Possible race condition ignored.
 	JagCheckInterval = Interval;
+
+};
+
+/**
+* Set the minimum time interval allowed between CAN-BUS Updates. Useful if you need to limit CAN-bandwidth. (For example if you're using the serial-can bridge.)
+*
+* @param Interval Interval time in seconds.
+*/
+void CANJaguarServer :: SetCANBusUpdateInterval ( double Interval )
+{
+
+	// Possible race condition ignored.
+	CANUpdateInterval = Interval;
 
 };
 
@@ -185,8 +206,10 @@ void CANJaguarServer :: Stop ()
 	while  ( DeQueueSuccessful )
 	{
 
+		// Message pointer.
 		CANJagServerMessage * Message;
 
+		// Receive pointer to message.
 		DeQueueSuccessful = ( msgQReceive ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), 0 ) != ERROR );
 
 		if ( Message != NULL )
@@ -402,11 +425,14 @@ void CANJaguarServer :: ConfigJag ( CAN_ID ID, CANJagConfigInfo Configuration )
 /**
 * Gets the speed value of a Jaguar.
 *
+* This function locks if another Get* method is being called concurrently.
+*
 * @param ID Controller ID on the CAN-Bus.
 */
 double CANJaguarServer :: GetJag ( CAN_ID ID )
 {
 
+	// Due to needing a response from the server thread, we must aquire the ResponseSemaphore so it doesn't preumpt a currently operating JAG_GET
 	semTake ( ResponseSemaphore, WAIT_FOREVER );
 
 	CANJagServerMessage * SendMessage = new CANJagServerMessage ();
@@ -414,6 +440,7 @@ double CANJaguarServer :: GetJag ( CAN_ID ID )
 	SendMessage -> Command = SEND_MESSAGE_JAG_GET;
 	SendMessage -> Data = static_cast <uint32_t> ( ID );
 
+	// In order to return quickly, due to the locking nature of Get* functions, we preumpt any pending commands.
 	SendError = ( msgQSend ( MessageSendQueue, reinterpret_cast <char *> ( & SendMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT ) == ERROR );
 
 	if ( SendError )
@@ -421,22 +448,27 @@ double CANJaguarServer :: GetJag ( CAN_ID ID )
 
 	CANJagServerMessage * ReceiveMessage;
 
+	// Receive message. ( It's imperative that we receive the result due to the preumptive nature of the call. )
 	if ( msgQReceive ( MessageReceiveQueue, reinterpret_cast <char *> ( & ReceiveMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER ) == ERROR )
 		return 0;
 
+	// We have our response, no longer necessary to lock the ResponseSemaphore
 	semGive ( ResponseSemaphore );
 
 	if ( ReceiveMessage == NULL )
 		return 0;
 
+	// Parse and check response message. Not sure how i'm going to handle this if something inconsistent ends up happening. Could be a response-locked semaphore, but then there's no point in using messaging.
 	GetCANJagMessage * GMessage = (GetCANJagMessage *) ReceiveMessage -> Data;
 
 	if ( GMessage != NULL )
 	{
 
+		// Acutally a response from JAG_GET?
 		if ( ReceiveMessage -> Command == SEND_MESSAGE_JAG_GET )
 		{
 
+			// Proper Jaguar message?
 			if ( GMessage -> ID == ID )
 			{
 
@@ -512,13 +544,31 @@ void CANJaguarServer :: RunLoop ()
 	CAN_ID ID;
 	bool Conflict = false;
 
-	double PreJagCheckTime = Timer :: GetPPCTimestamp ();
+	double PreJagCheckTime = Timer :: GetPPCTimestamp () - JagCheckInterval;
+	double PreCANCheckTime = Timer :: GetPPCTimestamp () - CANUpdateInterval;
 
 	while ( true )
 	{
 
 		if ( msgQReceive ( MessageSendQueue, reinterpret_cast <char *> ( & Message ), sizeof ( CANJagServerMessage * ), ParseWait ) != ERROR )
 		{
+
+			// CAN-Bus Update speed protection.
+			if ( CANUpdateInterval != 0 )
+			{
+
+				double CurrentCANUpdateTime = GetPPCTimestamp ();
+				double CANUpdateDelta = PreCANCheckTime - CurrentCANUpdateTime;
+
+				if ( CANUpdateDelta < CANUpdateInterval )
+				{
+
+					Wait ( CANUpdateDelta - CANUpdateInterval );
+					PreCANCheckTime = GetPPCTimestamp ();
+
+				}
+
+			}
 
 			if ( Message != NULL )
 			{
@@ -536,8 +586,10 @@ void CANJaguarServer :: RunLoop ()
 					// Disable Jaguar
 					case SEND_MESSAGE_JAG_DISABLE:
 
+						// Which Jaguar?
 						ID = static_cast <CAN_ID> ( Message -> Data );
 
+						// Find it and disable it.
 						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
 						{
 
@@ -562,8 +614,10 @@ void CANJaguarServer :: RunLoop ()
 					// Enable Jaguar
 					case SEND_MESSAGE_JAG_ENABLE:
 
+						// Which Jaguar?
 						ID = static_cast <CAN_ID> ( Message -> Data );
 
+						// Find it and enable it.
 						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
 						{
 
@@ -587,8 +641,10 @@ void CANJaguarServer :: RunLoop ()
 				// Set Jaguar
 					case SEND_MESSAGE_JAG_SET:
 
+						// Retreive JAG_SET message.
 						SetCANJagMessage * SJMessage = reinterpret_cast <SetCANJagMessage *> ( Message -> Data );
 
+						// Garbage data protection.
 						if ( SJMessage == NULL )
 						{
 
@@ -597,6 +653,7 @@ void CANJaguarServer :: RunLoop ()
 
 						}
 
+						// Find appropriate Jaguar and set it.
 						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
 						{
 
@@ -621,8 +678,10 @@ void CANJaguarServer :: RunLoop ()
 					// Add Jaguar
 					case SEND_MESSAGE_JAG_ADD:
 
+						// Retreive ADD_JAG Message.
 						AddCANJagMessage * AJMessage = reinterpret_cast <AddCANJagMessage *> ( Message -> Data );
 
+						// Garbage protection.
 						if ( AJMessage == NULL )
 						{
 
@@ -633,12 +692,14 @@ void CANJaguarServer :: RunLoop ()
 
 						Conflict = false;
 
+						// Does a Jaguar with the requested CAN_ID exist?
 						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
 						{
 
 							if ( ( * Jags ) [ i ].ID == AJMessage -> ID )
 							{
 
+								// Clean up.
 								delete AJMessage;
 								delete Message;
 
@@ -650,6 +711,7 @@ void CANJaguarServer :: RunLoop ()
 
 						}
 
+						// Do not create conflicting CANJaguar.
 						if ( Conflict )
 							break;
 
@@ -675,8 +737,10 @@ void CANJaguarServer :: RunLoop ()
 					// Config Jaguar
 					case SEND_MESSAGE_JAG_CONFIG:
 
+						// Retreive JAG_CONFIG Message.
 						ConfigCANJagMessage * CJMessage = reinterpret_cast <ConfigCANJagMessage *> ( Message -> Data );
 
+						// Garbage protection.
 						if ( CJMessage == NULL )
 						{
 
@@ -685,6 +749,7 @@ void CANJaguarServer :: RunLoop ()
 
 						}
 
+						// Find the appropriate Jaguar and configure it.
 						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
 						{
 
@@ -711,12 +776,15 @@ void CANJaguarServer :: RunLoop ()
 					// Get Jaguar Speed
 					case SEND_MESSAGE_JAG_GET:
 
+						// Retreive JAG_GET Message.
 						GetCANJagMessage * GJMessage = reinterpret_cast <GetCANJagMessage *> ( Message -> Data );
 						CANJagServerMessage * SendMessage;
 
+						// Garbage protection.
 						if ( GJMessage == NULL )
 						{
 
+							// All JAG_GET sends need some sort of response. Return garbage.
 							SendMessage = new CanJagServerMessage ();
 						
 							SendMessage -> Command = 0xFFFFFFFF;
@@ -730,6 +798,7 @@ void CANJaguarServer :: RunLoop ()
 
 						}
 
+						// Find appropriate Jaguar.
 						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
 						{
 
@@ -738,6 +807,7 @@ void CANJaguarServer :: RunLoop ()
 							if ( JagInfo.ID == GJMessage -> ID )
 							{
 
+								// Respond with CANJaguar :: Get ();
 								GetCANJagMessage * JVMessage = new GetCANJagMessage ();
 
 								JVMessage -> ID = JagInfo.ID;
@@ -757,11 +827,13 @@ void CANJaguarServer :: RunLoop ()
 
 						break;
 
-				// Remove Jaguar
+					// Remove Jaguar
 					case SEND_MESSAGE_JAG_REMOVE:
 
+						// Which Jaguar?
 						ID = static_cast <uint32_t> ( Message -> Data );
 
+						// Find it and remove it.
 						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
 						{
 
@@ -786,6 +858,7 @@ void CANJaguarServer :: RunLoop ()
 
 						break;
 
+					// CANJaguar :: UpdateSyncGroup (). (I'm not sure this actually needs to run in the same thread context as the appropriate jags, but this is easier than testing it.)
 					case SEND_MESSAGE_JAG_UPDATE_SYNC_GROUP:
 
 						uint8_t Group = static_cast <uint8_t> ( Message -> Data );
@@ -807,14 +880,17 @@ void CANJaguarServer :: RunLoop ()
 
 		}
 
+		// Get time passed since last brown-out check.
 		double CheckTime = Timer :: GetPPCTimestamp ();
 		double CheckTimeDelta = CheckTime - PreJagCheckTime;
 
+		// Has the required time passed to check a jaguar? If so, check it.
 		if ( CheckJags && ( JagCheckInterval <= CheckTimeDelta ) )
 		{
 
 			PreJagCheckTime = CheckTime;
 
+			// No Jags currently.
 			if ( JagLoopCounter >= Jags -> GetLength () )
 				JagLoopCounter = 0;
 
@@ -829,6 +905,7 @@ void CANJaguarServer :: RunLoop ()
 
 };	
 
+// Server entry point.
 void CANJaguarServer :: _StartServerTask ( CANJaguarServer * Server )
 {
 

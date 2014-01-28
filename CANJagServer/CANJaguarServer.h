@@ -15,6 +15,8 @@
 
 #define CANJAGSERVER_CHECKINTERVAL_DEFAULT 0.05
 
+#define CANJAGSERVER_CANBUS_UPDATEINTERVAL_DEFAULT 0
+
 #define CANJAGSERVER_MESSAGEQUEUE_LENGTH 200
 
 #define CANJAGSERVER_PRIORITY 50
@@ -26,13 +28,15 @@ class CANJaguarServer
 {
 public:
 
-	CANJaguarServer ( bool DoBrownOutCHeck = true, double BrownOutCheckInterval = CANJAGSERVER_CHECKINTERVAL_DEFAULT, uint32_t ParseTimeout = CANJAGSERVER_PARSE_TIMEOUT_DEFAULT, uint32_t CommandTimeout = CANJAGSERVER_COMMAND_TIMEOUT_DEFAULT );
+	CANJaguarServer ( bool DoBrownOutCHeck = true, double BrownOutCheckInterval = CANJAGSERVER_CHECKINTERVAL_DEFAULT, double CANBusUpdateInterval = CANJAGSERVER_CANBUS_UPDATEINTERVAL_DEFAULT, uint32_t CommandTimeout = CANJAGSERVER_COMMAND_TIMEOUT_DEFAULT, uint32_t ParseTimeout = CANJAGSERVER_PARSE_TIMEOUT_DEFAULT );
 	~CANJaguarServer ();
 
 	void SetParseMessageTimeout ( uint32_t ParseTimeout );
 	void SetCommandMessageTimeout ( uint32_t CommandTimeout );
 	void SetBrownOutCheckEnabled ( bool DoBrownOutCheck );
+
 	void SetJagCheckInterval ( double Interval );
+	void SetCANBusUpdateInterval ( double Interval );
 
 	bool Start ();
 	void Stop ();
@@ -127,8 +131,9 @@ private:
 	MSG_Q_ID MessageReceiveQueue;
 	SEM_ID ResponseSemaphore;
 
+	double CANUpdateInterval;
+
 	double JagCheckInterval;
-	Timer * JagCheckTimer;
 	bool CheckJags;
 
 	uint32_t ParseWait;
