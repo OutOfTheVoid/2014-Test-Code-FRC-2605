@@ -206,12 +206,12 @@ void CANJaguarServer :: Stop ()
 	{
 
 		// Message pointer.
-		CANJagServerMessage * Message;
+		CANJagServerMessage * Message = NULL;
 
 		// Receive pointer to message.
 		DeQueueSuccessful = ( msgQReceive ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), 0 ) != ERROR );
 
-		if ( Message != NULL )
+		if ( Message != NULL && DeQueueSuccessful )
 		{
 
 			// Correctly de-allocate messages.
