@@ -16,11 +16,10 @@
 * Constructor
 *
 * @param DoBrownOutCheck Whether or not to peridoically check if any Jaguars on the List have browned-out.
-* @param BrownOutCheckInterval How much time should pass between each successive brown-out check. (Set this higher if the canbus starts complaining.)
-* @param ParseTimeout How many system ticks to lock the message loop while no messages are queued before moving on to Brown-out detection or re-trying.
-* that if your code updates motors frequently, setting this value too low will allow the message queue to fill up more quickly.)
+* @param BrownOutCheckInterval How much time should pass between each successive brown-out check. (Set this higher if brown-outs aren't a common problem for you.)
+* @param CANBusUpdateInterval Minimum time in between CANBus Updates. ( Set this higher if you're canbus is complaining, as can be a common problem with serial-CAN.)
 * @param CommandTimeout How many system ticks to lock a command waiting on the message queue to have space.
-* @
+* @param ParseTimeout How many system ticks to lock the message loop while no messages are queued before moving on to Brown-out detection or re-trying.
 */
 CANJaguarServer :: CANJaguarServer ( bool DoBrownOutCheck, double BrownOutCheckInterval, double CANBusUpdateInterval, uint32_t CommandTimeout, uint32_t ParseTimeout )
 {
@@ -98,7 +97,7 @@ void CANJaguarServer :: SetBrownOutCheckEnabled ( bool DoBrownOutCheck )
 void CANJaguarServer :: SetJagCheckInterval ( double Interval )
 {
 
-	// Possible race condition ignored.
+	// Possible race condition ignored, due to only being used for conditional comparison.
 	JagCheckInterval = Interval;
 
 };
@@ -111,7 +110,7 @@ void CANJaguarServer :: SetJagCheckInterval ( double Interval )
 void CANJaguarServer :: SetCANBusUpdateInterval ( double Interval )
 {
 
-	// Possible race condition ignored.
+	// Possible race condition ignored, due to only being used for conditional comparison.
 	CANUpdateInterval = Interval;
 
 };
@@ -557,14 +556,14 @@ void CANJaguarServer :: RunLoop ()
 			if ( CANUpdateInterval != 0 )
 			{
 
-				double CurrentCANUpdateTime = GetPPCTimestamp ();
+				double CurrentCANUpdateTime = Timer :: GetPPCTimestamp ();
 				double CANUpdateDelta = PreCANCheckTime - CurrentCANUpdateTime;
 
 				if ( CANUpdateDelta < CANUpdateInterval )
 				{
 
 					Wait ( CANUpdateDelta - CANUpdateInterval );
-					PreCANCheckTime = GetPPCTimestamp ();
+					PreCANCheckTime = Timer :: GetPPCTimestamp ();
 
 				}
 
