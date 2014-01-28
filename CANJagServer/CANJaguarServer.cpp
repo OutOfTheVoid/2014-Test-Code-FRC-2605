@@ -12,14 +12,18 @@
 * @param ParseTimeout How many system ticks to lock the message loop while no messages are queued before moving on to Brown-out detection or re-trying.
 * @param CommandTimeout How many system ticks to lock a command waiting on the message queue to have space.
 */
-CANJaguarServer :: CANJaguarServer ( bool DoBrownOutCheck, uint32_t ParseTimeout, uint32_t CommandTimeout )
+CANJaguarServer :: CANJaguarServer ( bool DoBrownOutCheck, double BrownOutCheckInterval, uint32_t ParseTimeout, uint32_t CommandTimeout )
 {
 
+	JagCheckInterval = BrownOutCheckInterval;
 	CheckJags = DoBrownOutCheck;
 	ParseWait = ParseTimeout;
 	CommandWait = CommandTimeout;
 
 	Running = false;
+
+	//Jaguar Check Interval Timer
+	JagCheckTimer = new Timer ();
 
 	// Server task. _StartServerTask calls this -> RunLoop.
 	ServerTask = new Task ( "CANJaguarServer_Task", (FUNCPTR) & _StartServerTask, CANJAGSERVER_PRIORITY, CANJAGSERVER_STACKSIZE );
@@ -39,6 +43,7 @@ CANJaguarServer :: ~CANJaguarServer ()
 
 	delete ServerTask;
 	delete Jags;
+	delete JagCheckTimer;
 
 };
 
@@ -75,6 +80,18 @@ void CANJaguarServer :: SetBrownOutCheckEnabled ( bool DoBrownOutCheck )
 {
 
 	CheckJags = DoBrownOutCheck;
+
+};
+
+/**
+* Set the time interval between server messages to check for brown-outs.
+*
+* @param Interval Interval time in seconds.
+*/
+void CANJaguarServer :: SetJagCheckInterval ( double Interval )
+{
+
+	JagCheckInterval = Interval;
 
 };
 
@@ -489,17 +506,16 @@ void CANJaguarServer :: RunLoop ()
 	if ( Jags == NULL )
 		return;
 
-	uint32_t RunLoopCounter = 0;
 	uint32_t JagLoopCounter = 0;
 	CANJagServerMessage * Message;
 
 	CAN_ID ID;
 	bool Conflict = false;
 
+	double PreJagCheckTime = Timer :: GetPPCTimestamp ();
+
 	while ( true )
 	{
-		
-		RunLoopCounter ++;
 
 		if ( msgQReceive ( MessageSendQueue, reinterpret_cast <char *> ( & Message ), sizeof ( CANJagServerMessage * ), ParseWait ) != ERROR )
 		{
@@ -788,13 +804,16 @@ void CANJaguarServer :: RunLoop ()
 				}
 
 			}
-			else
-				printf ( "CANJaguarServer: NULL MESSAGE!\n" );
 
 		}
 
-		if ( ( RunLoopCounter & 0xF == 0 ) && CheckJags )
+		double CheckTime = Timer :: GetPPCTimestamp ();
+		double CheckTimeDelta = CheckTime - PreJagCheckTime;
+
+		if ( CheckJags && ( JagCheckInterval <= CheckTimeDelta ) )
 		{
+
+			PreJagCheckTime = CheckTime;
 
 			if ( JagLoopCounter >= Jags -> GetLength () )
 				JagLoopCounter = 0;
@@ -804,7 +823,7 @@ void CANJaguarServer :: RunLoop ()
 
 			JagLoopCounter ++;
 
-		}	
+		}
 
 	}
 

@@ -87,8 +87,8 @@ void RobotMainTask :: TeleopInit ()
 void RobotMainTask :: TeleopPeriodic ()
 {
 
-	Drive -> SetTranslation ( JoyFilter -> Compute ( TranslateStick -> GetX () ), JoyFilter -> Compute ( TranslateStick -> GetY () ) );
-	Drive -> SetRotation ( - JoyFilter -> Compute ( RotateStick -> GetX () ) );
+	Drive -> SetTranslation ( JoyFilter -> Compute ( TranslateStick -> GetX () ), - JoyFilter -> Compute ( TranslateStick -> GetY () ) );
+	Drive -> SetRotation ( JoyFilter -> Compute ( RotateStick -> GetX () ) );
 	Drive -> PushTransform ();
 
 };
@@ -112,8 +112,15 @@ void RobotMainTask :: AutonomousPeriodic ()
 void RobotMainTask :: AutonomousRoutine ()
 {
 
+	JagServer -> ClearSendError ();
+
+	Wait ( 0.01 );
+
 	Drive -> SetTranslation ( 0, 0.5 );
 	Drive -> PushTransform ();
+
+	if ( JagServer -> CheckSendError () )
+		printf ( "Jaguar Send Error!!\n");
 
 	Wait ( 1.0 );
 
