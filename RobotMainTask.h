@@ -13,7 +13,9 @@
 #include "CANJagServer/CANJaguarServer.h"
 #include "CANJagServer/AsynchCANJaguar.h"
 
- #define SQRT_2 1.4142
+#include "Filters/ExponentialFilter.h"
+
+#define SQRT_2 1.4142
 
 class RobotMainTask : public IterativeRobot
 {
@@ -36,6 +38,11 @@ public:
 private:
 
 	Task * AutonomousTask;
+
+	Joystick * TranslateStick;
+	Joystick * RotateStick;
+
+	ExponentialFilter * JoyFilter;
 
 	CANJaguarServer * JagServer;
 

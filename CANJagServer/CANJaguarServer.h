@@ -10,8 +10,8 @@
 #include "Util/JaguarUtils.h"
 #include "Util/Vector.h"
 
-#define CANJAGSERVER_PARSE_TIMEOUT_DEFAULT 5000
-#define CANJAGSERVER_COMMAND_TIMEOUT_DEFAULT 0
+#define CANJAGSERVER_PARSE_TIMEOUT_DEFAULT 500
+#define CANJAGSERVER_COMMAND_TIMEOUT_DEFAULT 200
 
 #define CANJAGSERVER_MESSAGEQUEUE_LENGTH 200
 
@@ -73,7 +73,7 @@ public:
 	{
 
 		uint32_t Command;
-		void * Data;
+		uint32_t Data;
 
 	} CanJagServerMessage;
 

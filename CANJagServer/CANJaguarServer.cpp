@@ -192,7 +192,7 @@ void CANJaguarServer :: Stop ()
 
 					{
 						
-						SetCANJagMessage * SJMessage = (SetCANJagMessage *) Message -> Data;
+						SetCANJagMessage * SJMessage = reinterpret_cast <SetCANJagMessage *> ( Message -> Data );
 
 						if ( SJMessage != NULL )
 							delete SJMessage;
@@ -206,7 +206,7 @@ void CANJaguarServer :: Stop ()
 
 					{
 
-						AddCANJagMessage * AJMessage = (AddCANJagMessage *) Message -> Data;
+						AddCANJagMessage * AJMessage = reinterpret_cast <AddCANJagMessage *> ( Message -> Data );
 
 						if ( AJMessage != NULL )
 							delete AJMessage;
@@ -220,7 +220,7 @@ void CANJaguarServer :: Stop ()
 					
 					{
 
-						ConfigCANJagMessage * CJMessage = (ConfigCANJagMessage *) Message -> Data;
+						ConfigCANJagMessage * CJMessage = reinterpret_cast <ConfigCANJagMessage *> ( Message -> Data );
 
 						if ( CJMessage != NULL )
 							delete CJMessage;
@@ -287,7 +287,7 @@ void CANJaguarServer :: DisableJag ( CAN_ID ID )
 	CANJagServerMessage * Message = new CANJagServerMessage ();
 	
 	Message -> Command = SEND_MESSAGE_JAG_DISABLE;
-	Message -> Data = (void *) ID;
+	Message -> Data = static_cast <uint32_t> ( ID );
 
 	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT ) == ERROR );
 
@@ -304,7 +304,7 @@ void CANJaguarServer :: EnableJag ( CAN_ID ID )
 	CANJagServerMessage * Message = new CANJagServerMessage ();
 	
 	Message -> Command = SEND_MESSAGE_JAG_ENABLE;
-	Message -> Data = (void *) ID;
+	Message -> Data = static_cast <uint32_t> ( ID );
 
 	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
@@ -329,7 +329,7 @@ void CANJaguarServer :: SetJag ( CAN_ID ID, double Speed, uint8_t SyncGroup )
 	SJMessage -> SyncGroup = SyncGroup;
 
 	Message -> Command = SEND_MESSAGE_JAG_SET;
-	Message -> Data = (void *) SJMessage;
+	Message -> Data = reinterpret_cast <uint32_t> ( SJMessage );
 
 	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
@@ -353,7 +353,7 @@ void CANJaguarServer :: AddJag ( CAN_ID ID, CANJagConfigInfo Configuration )
 	AJMessage -> Config = Configuration;
 
 	Message -> Command = SEND_MESSAGE_JAG_ADD;
-	Message -> Data = (void *) AJMessage;
+	Message -> Data = reinterpret_cast <uint32_t> ( AJMessage );
 
 	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
@@ -376,7 +376,7 @@ void CANJaguarServer :: ConfigJag ( CAN_ID ID, CANJagConfigInfo Configuration )
 	CJMessage -> Config = Configuration;
 
 	Message -> Command = SEND_MESSAGE_JAG_CONFIG;
-	Message -> Data = (void *) CJMessage;
+	Message -> Data = reinterpret_cast <uint32_t> ( CJMessage );
 
 	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
@@ -395,16 +395,16 @@ double CANJaguarServer :: GetJag ( CAN_ID ID )
 	CANJagServerMessage * SendMessage = new CANJagServerMessage ();
 	
 	SendMessage -> Command = SEND_MESSAGE_JAG_GET;
-	SendMessage -> Data = (void *) ID;
+	SendMessage -> Data = static_cast <uint32_t> ( ID );
 
-	SendError = ( msgQSend ( MessageSendQueue, (char *) & SendMessage, sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT ) == ERROR );
+	SendError = ( msgQSend ( MessageSendQueue, reinterpret_cast <char *> ( & SendMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT ) == ERROR );
 
 	if ( SendError )
 		return 0;
 
 	CANJagServerMessage * ReceiveMessage;
 
-	if ( msgQReceive ( MessageReceiveQueue, (char *) & ReceiveMessage, sizeof ( CANJagServerMessage * ), WAIT_FOREVER ) == ERROR )
+	if ( msgQReceive ( MessageReceiveQueue, reinterpret_cast <char *> ( & ReceiveMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER ) == ERROR )
 		return 0;
 
 	semGive ( ResponseSemaphore );
@@ -457,9 +457,9 @@ void CANJaguarServer :: UpdateJagSyncGroup ( uint8_t SyncGroup )
 	CANJagServerMessage * Message = new CANJagServerMessage ();
 	
 	Message -> Command = SEND_MESSAGE_JAG_UPDATE_SYNC_GROUP;
-	Message -> Data = (void *) (uint32_t) SyncGroup;
+	Message -> Data = static_cast <uint32_t> ( SyncGroup );
 
-	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT ) == ERROR );
+	SendError = ( msgQSend ( MessageSendQueue, reinterpret_cast <char *> ( & Message ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT ) == ERROR );
 
 };
 
@@ -474,9 +474,9 @@ void CANJaguarServer :: RemoveJag ( CAN_ID ID )
 	CANJagServerMessage * Message = new CANJagServerMessage ();
 	
 	Message -> Command = SEND_MESSAGE_JAG_REMOVE;
-	Message -> Data = (void *) ID;
+	Message -> Data = static_cast <uint32_t> ( ID );
 
-	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
+	SendError = ( msgQSend ( MessageSendQueue, reinterpret_cast <char *> ( & Message ), sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
 };
 
@@ -501,285 +501,295 @@ void CANJaguarServer :: RunLoop ()
 		
 		RunLoopCounter ++;
 
-		if ( msgQReceive ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), ParseWait ) != ERROR )
+		if ( msgQReceive ( MessageSendQueue, reinterpret_cast <char *> ( & Message ), sizeof ( CANJagServerMessage * ), ParseWait ) != ERROR )
 		{
 
-			switch ( Message -> Command )
+			if ( Message != NULL )
 			{
 
-				// No-Op
-				case SEND_MESSAGE_NOP:
+				switch ( Message -> Command )
+				{
 
-					delete Message;
+					// No-Op
+					case SEND_MESSAGE_NOP:
 
-					return;
+						delete Message;
 
-				// Disable Jaguar
-				case SEND_MESSAGE_JAG_DISABLE:
+						break;
 
-					ID = (uint32_t) Message -> Data;
+					// Disable Jaguar
+					case SEND_MESSAGE_JAG_DISABLE:
 
-					for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
-					{
+						ID = static_cast <CAN_ID> ( Message -> Data );
 
-						ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
-
-						if ( JagInfo.ID == ID )
+						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
 						{
 
-							JagInfo.Jag -> Set ( 0 );
-							JagInfo.Jag -> DisableControl ();
+							ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
 
-							break;
+							if ( JagInfo.ID == ID )
+							{
+
+								JagInfo.Jag -> Set ( 0 );
+								JagInfo.Jag -> DisableControl ();
+
+								break;
+
+							}	
 
 						}
 
-					}
+						delete Message;
 
-					delete Message;
+						break;
 
-				// Enable Jaguar
-				case SEND_MESSAGE_JAG_ENABLE:
+					// Enable Jaguar
+					case SEND_MESSAGE_JAG_ENABLE:
 
-					ID = (uint32_t) Message -> Data;
+						ID = static_cast <CAN_ID> ( Message -> Data );
 
-					for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
-					{
-
-						ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
-
-						if ( JagInfo.ID == ID )
+						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
 						{
 
-							JagInfo.Jag -> EnableControl ();
+							ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
 
-							break;
+							if ( JagInfo.ID == ID )
+							{
 
-						}
+								JagInfo.Jag -> EnableControl ();
+
+								break;
+
+							}
 
 					}
 
-					delete Message;
+						delete Message;
+
+						break;
 
 				// Set Jaguar
-				case SEND_MESSAGE_JAG_SET:
+					case SEND_MESSAGE_JAG_SET:
 
-					SetCANJagMessage * SJMessage = (SetCANJagMessage *) Message -> Data;
+						SetCANJagMessage * SJMessage = reinterpret_cast <SetCANJagMessage *> ( Message -> Data );
 
-					if ( SJMessage == NULL )
-					{
-
-						delete Message;
-						return;
-
-					}
-
-					for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
-					{
-
-						ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
-
-						if ( JagInfo.ID == SJMessage -> ID )
+						if ( SJMessage == NULL )
 						{
 
-							JagInfo.Jag -> Set ( SJMessage -> Speed, SJMessage -> SyncGroup );
+							delete Message;
+							return;
 
+						}
+
+						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
+						{
+
+							ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
+
+							if ( JagInfo.ID == SJMessage -> ID )
+							{
+
+								JagInfo.Jag -> Set ( SJMessage -> Speed, SJMessage -> SyncGroup );
+
+								break;
+
+							}
+
+						}
+
+						delete SJMessage;
+						delete Message;
+
+						break;
+
+					// Add Jaguar
+					case SEND_MESSAGE_JAG_ADD:
+
+						AddCANJagMessage * AJMessage = reinterpret_cast <AddCANJagMessage *> ( Message -> Data );
+
+						if ( AJMessage == NULL )
+						{
+
+							delete Message;
+							return;
+
+						}
+
+						Conflict = false;
+
+						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
+						{
+
+							if ( ( * Jags ) [ i ].ID == AJMessage -> ID )
+							{
+
+								delete AJMessage;
+								delete Message;
+
+								Conflict = true;
+
+								break;
+
+							}
+
+						}
+
+						if ( Conflict )
+							break;
+
+						{
+
+							ServerCANJagInfo NewJag;
+
+							NewJag.ID = AJMessage -> ID;
+							NewJag.Jag = new CANJaguar ( AJMessage -> ID );
+							NewJag.Info = AJMessage -> Config;
+
+							ConfigCANJaguar ( NewJag.Jag, NewJag.Info );
+
+							Jags -> Push ( NewJag );
+
+						}
+
+						delete AJMessage;
+						delete Message;
+
+						break;
+
+					// Config Jaguar
+					case SEND_MESSAGE_JAG_CONFIG:
+
+						ConfigCANJagMessage * CJMessage = reinterpret_cast <ConfigCANJagMessage *> ( Message -> Data );
+
+						if ( CJMessage == NULL )
+						{
+
+							delete Message;
 							break;
 
 						}
 
-					}
-
-					delete SJMessage;
-					delete Message;
-
-					break;
-
-				// Add Jaguar
-				case SEND_MESSAGE_JAG_ADD:
-
-					AddCANJagMessage * AJMessage = (AddCANJagMessage *) Message -> Data;
-
-					if ( AJMessage == NULL )
-					{
-
-						delete Message;
-						return;
-
-					}
-
-					Conflict = false;
-
-					for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
-					{
-
-						if ( ( * Jags ) [ i ].ID == SJMessage -> ID )
+						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
 						{
 
-							delete AJMessage;
+							ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
+
+							if ( JagInfo.ID == SJMessage -> ID )
+							{
+
+								ConfigCANJaguar ( JagInfo.Jag, CJMessage -> Config );
+
+								( * Jags ) [ i ].Info = CJMessage -> Config;
+
+								break;
+
+							}
+
+						}
+
+						delete Message;
+						delete CJMessage;
+
+						break;
+
+					// Get Jaguar Speed
+					case SEND_MESSAGE_JAG_GET:
+
+						GetCANJagMessage * GJMessage = reinterpret_cast <GetCANJagMessage *> ( Message -> Data );
+						CANJagServerMessage * SendMessage;
+
+						if ( GJMessage == NULL )
+						{
+
+							SendMessage = new CanJagServerMessage ();
+						
+							SendMessage -> Command = 0xFFFFFFFF;
+							SendMessage -> Data = 0;
+
+							msgQSend ( MessageReceiveQueue, reinterpret_cast <char *> ( & SendMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT );
+
 							delete Message;
 
-							Conflict = true;
-
 							break;
 
 						}
 
-					}
-
-					if ( Conflict )
-						break;
-
-					{
-
-						ServerCANJagInfo NewJag;
-
-						NewJag.ID = AJMessage -> ID;
-						NewJag.Jag = new CANJaguar ( AJMessage -> ID );
-						NewJag.Info = AJMessage -> Config;
-
-						ConfigCANJaguar ( NewJag.Jag, NewJag.Info );
-
-						Jags -> Push ( NewJag );
-
-					}
-
-					delete AJMessage;
-					delete Message;
-
-					break;
-
-				// Config Jaguar
-				case SEND_MESSAGE_JAG_CONFIG:
-
-					ConfigCANJagMessage * CJMessage = (ConfigCANJagMessage *) Message -> Data;
-
-					if ( CJMessage == NULL )
-					{
-
-						delete Message;
-						break;
-
-					}
-
-					for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
-					{
-
-						ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
-
-						if ( JagInfo.ID == SJMessage -> ID )
+						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
 						{
 
+							ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
 
-							ConfigCANJaguar ( JagInfo.Jag, CJMessage -> Config );
+							if ( JagInfo.ID == GJMessage -> ID )
+							{
 
-							( * Jags ) [ i ].Info = CJMessage -> Config;
+								GetCANJagMessage * JVMessage = new GetCANJagMessage ();
 
-							break;
+								JVMessage -> ID = JagInfo.ID;
+								JVMessage -> Speed = JagInfo.Jag -> Get ();
+
+								SendMessage -> Command = SEND_MESSAGE_JAG_GET;
+								SendMessage -> Data = reinterpret_cast <uint32_t> ( JVMessage );
+
+								msgQSend ( MessageReceiveQueue, reinterpret_cast <char *> ( & SendMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT );
+
+							}
 
 						}
 
-					}
-
-					delete Message;
-					delete CJMessage;
-
-					break;
-
-				// Get Jaguar Speed
-				case SEND_MESSAGE_JAG_GET:
-
-					GetCANJagMessage * GJMessage = (GetCANJagMessage *) Message -> Data;
-					CANJagServerMessage * SendMessage;
-
-					if ( GJMessage == NULL )
-					{
-
-						SendMessage = new CanJagServerMessage ();
-						
-						SendMessage -> Command = 0xFFFFFFFF;
-						SendMessage -> Data = NULL;
-
-						msgQSend ( MessageReceiveQueue, (char *) & SendMessage, sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT );
-
 						delete Message;
+						delete GJMessage;
 
 						break;
-
-					}
-
-					for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
-					{
-
-						ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
-
-						if ( JagInfo.ID == GJMessage -> ID )
-						{
-
-							GetCANJagMessage * JVMessage = new GetCANJagMessage ();
-
-							JVMessage -> ID = JagInfo.ID;
-							JVMessage -> Speed = JagInfo.Jag -> Get ();
-
-							SendMessage -> Command = SEND_MESSAGE_JAG_GET;
-							SendMessage -> Data = (void *) JVMessage;
-
-							msgQSend ( MessageReceiveQueue, (char *) & SendMessage, sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT );
-
-						}
-
-					}
-
-					delete Message;
-					delete GJMessage;
-
-					break;
 
 				// Remove Jaguar
-				case SEND_MESSAGE_JAG_REMOVE:
+					case SEND_MESSAGE_JAG_REMOVE:
 
-					ID = (uint32_t) Message -> Data;
+						ID = static_cast <uint32_t> ( Message -> Data );
 
-					for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
-					{
-
-						ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
-
-						if ( JagInfo.ID == ID )
+						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
 						{
 
-							Jags -> Remove ( i, 1 );
+							ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
 
-							JagInfo.Jag -> DisableControl ();
-							delete JagInfo.Jag;
+							if ( JagInfo.ID == ID )
+							{
 
-							delete Message;
-							break;
+								Jags -> Remove ( i, 1 );
+
+								JagInfo.Jag -> DisableControl ();
+								delete JagInfo.Jag;
+
+								delete Message;
+								break;
+
+							}
 
 						}
 
-					}
+						delete Message;
 
-					delete Message;
+						break;
 
-					break;
+					case SEND_MESSAGE_JAG_UPDATE_SYNC_GROUP:
 
-				case SEND_MESSAGE_JAG_UPDATE_SYNC_GROUP:
+						uint8_t Group = static_cast <uint8_t> ( Message -> Data );
+						CANJaguar :: UpdateSyncGroup ( Group );
 
-					uint8_t Group = (uint8_t) (uint32_t) Message -> Data;
-					CANJaguar :: UpdateSyncGroup ( Group );
+						delete Message;
 
-					delete Message;
+						break;
 
-					break;
+					default:
 
-				default:
+						delete Message;
 
-					delete Message;
+						break;
 
-					break;
+				}
 
 			}
+			else
+				printf ( "CANJaguarServer: NULL MESSAGE!\n" );
 
 		}
 

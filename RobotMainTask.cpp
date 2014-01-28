@@ -42,6 +42,11 @@ RobotMainTask :: RobotMainTask ():
 
 	AutonomousTask = new Task ( "SHS_Autononmous", (FUNCPTR) & AutonomousTaskStub );
 
+	TranslateStick = new Joystick ( 1 );
+	RotateStick = new Joystick ( 2 );
+
+	JoyFilter = new ExponentialFilter ( 2.0 );
+
 };
 
 RobotMainTask :: ~RobotMainTask ()
@@ -82,7 +87,9 @@ void RobotMainTask :: TeleopInit ()
 void RobotMainTask :: TeleopPeriodic ()
 {
 
-
+	Drive -> SetTranslation ( JoyFilter -> Compute ( TranslateStick -> GetX () ), JoyFilter -> Compute ( TranslateStick -> GetY () ) );
+	Drive -> SetRotation ( - JoyFilter -> Compute ( RotateStick -> GetX () ) );
+	Drive -> PushTransform ();
 
 };
 

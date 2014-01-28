@@ -59,15 +59,58 @@ void ShooterBelts :: SetSensors ( AnalogSensor * AngleL, AnalogSensor * AngleR )
 
 };
 
-void ShooterBelts :: SetInverted ( bool BL, bool BR, bool SL, bool SR );
+void ShooterBelts :: SetInverted ( bool BL, bool BR, bool SL, bool SR )
+{
 
-void ShooterBelts :: CalibrateArmLeftOut ();
-void ShooterBelts :: CalibrateArmLeftIn ();
 
-void ShooterBelts :: CalibrateArmRightOut ();
-void ShooterBelts :: CalibrateArmRightIn ();
 
-bool ShooterBelts :: Enable ();
-void ShooterBelts :: Disable ();
+};
+
+void ShooterBelts :: CalibrateArmLeftOut ()
+{
+
+
+
+};
+
+void ShooterBelts :: CalibrateArmLeftIn ()
+{
+
+
+
+};
+
+void ShooterBelts :: CalibrateArmRightOut ()
+{
+
+
+
+};
+
+void ShooterBelts :: CalibrateArmRightIn ()
+{
+
+
+
+};
+
+bool ShooterBelts :: Enable ()
+{
+
+
+
+};
+
+void ShooterBelts :: Disable ()
+{
+
+
+
+};
 	
-bool ShooterBelts :: GetEnabled ();
+bool ShooterBelts :: GetEnabled ()
+{
+
+	return Enabled;
+
+};

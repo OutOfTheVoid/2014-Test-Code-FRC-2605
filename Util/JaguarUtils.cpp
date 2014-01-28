@@ -37,20 +37,20 @@ void ConfigCANJaguar ( CANJaguar * Jag, CANJagConfigInfo Conf )
 		break;
 		
 	case CANJaguar :: kPosition:
+		Jag -> ChangeControlMode ( CANJaguar :: kPosition );
 		Jag -> SetPositionReference ( Conf.PosRef );
 		if ( Conf.PosRef == 0 )
 			Jag -> ConfigEncoderCodesPerRev ( Conf.EncoderLinesPerRev );
 		else
 			Jag -> ConfigPotentiometerTurns ( Conf.PotentiometerTurnsPerRev );
-		Jag -> ChangeControlMode ( CANJaguar :: kPosition );
 		Jag -> SetPID ( Conf.P, Conf.I, Conf.D );
 		break;
 		
 	case CANJaguar :: kSpeed:
+		Jag -> ChangeControlMode ( CANJaguar :: kSpeed );
 		Jag -> SetSpeedReference ( Conf.SpeedRef );
 		Jag -> ConfigEncoderCodesPerRev ( Conf.EncoderLinesPerRev );
 		Jag -> SetPID ( Conf.P, Conf.I, Conf.D );
-		Jag -> ChangeControlMode ( CANJaguar :: kSpeed );
 		break;
 		
 	default:

@@ -39,7 +39,7 @@ void AsynchCANJaguar :: Disable ()
 void AsynchCANJaguar :: Set ( float Speed, uint8_t SyncGroup )
 {
 
-	Server -> SetJag ( ID, Speed );
+	Server -> SetJag ( ID, Speed, SyncGroup );
 
 };
 
