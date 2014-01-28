@@ -209,7 +209,7 @@ void CANJaguarServer :: Stop ()
 		CANJagServerMessage * Message = NULL;
 
 		// Receive pointer to message.
-		DeQueueSuccessful = ( msgQReceive ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), 0 ) != ERROR );
+		DeQueueSuccessful = ( msgQReceive ( MessageSendQueue, reinterpret_cast <char *> ( & Message ), sizeof ( CANJagServerMessage * ), 0 ) != ERROR );
 
 		if ( Message != NULL && DeQueueSuccessful )
 		{
@@ -328,7 +328,7 @@ void CANJaguarServer :: DisableJag ( CAN_ID ID )
 	Message -> Command = SEND_MESSAGE_JAG_DISABLE;
 	Message -> Data = static_cast <uint32_t> ( ID );
 
-	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT ) == ERROR );
+	SendError = ( msgQSend ( MessageSendQueue, reinterpret_cast <char *> ( & Message ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT ) == ERROR );
 
 };
 
@@ -345,7 +345,7 @@ void CANJaguarServer :: EnableJag ( CAN_ID ID )
 	Message -> Command = SEND_MESSAGE_JAG_ENABLE;
 	Message -> Data = static_cast <uint32_t> ( ID );
 
-	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
+	SendError = ( msgQSend ( MessageSendQueue, reinterpret_cast <char *> (  & Message ), sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
 };
 
@@ -370,7 +370,7 @@ void CANJaguarServer :: SetJag ( CAN_ID ID, double Speed, uint8_t SyncGroup )
 	Message -> Command = SEND_MESSAGE_JAG_SET;
 	Message -> Data = reinterpret_cast <uint32_t> ( SJMessage );
 
-	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
+	SendError = ( msgQSend ( MessageSendQueue, reinterpret_cast <char *> ( & Message ), sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
 };
 
@@ -394,7 +394,7 @@ void CANJaguarServer :: AddJag ( CAN_ID ID, CANJagConfigInfo Configuration )
 	Message -> Command = SEND_MESSAGE_JAG_ADD;
 	Message -> Data = reinterpret_cast <uint32_t> ( AJMessage );
 
-	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
+	SendError = ( msgQSend ( MessageSendQueue, reinterpret_cast <char *> ( & Message ), sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
 };
 
@@ -417,7 +417,7 @@ void CANJaguarServer :: ConfigJag ( CAN_ID ID, CANJagConfigInfo Configuration )
 	Message -> Command = SEND_MESSAGE_JAG_CONFIG;
 	Message -> Data = reinterpret_cast <uint32_t> ( CJMessage );
 
-	SendError = ( msgQSend ( MessageSendQueue, (char *) & Message, sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
+	SendError = ( msgQSend ( MessageSendQueue, reinterpret_cast <char *> ( & Message ), sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
 };
 
