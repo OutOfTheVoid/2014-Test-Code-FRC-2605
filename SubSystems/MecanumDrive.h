@@ -10,6 +10,7 @@
 #include <math.h>
 
 #define PI_Div_4 0.78539816339
+#define SQRT_2 1.41421356237
 
 typedef struct
 {

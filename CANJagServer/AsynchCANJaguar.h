@@ -24,6 +24,10 @@ public:
 	void Set ( float Speed, uint8_t SyncGroup = 0 );
 	float Get ();
 
+	float GetBusVoltage ();
+	float GetOutputVoltage ();
+	float GetOutputCurrent ();
+
 	void Configure ( CANJagConfigInfo Config );
 
 	void PIDWrite ( float Speed );

@@ -79,6 +79,7 @@ public:
 		SEND_MESSAGE_JAG_UPDATE_SYNC_GROUP,
 		SEND_MESSAGE_JAG_GET_BUS_VOLTAGE,
 		SEND_MESSAGE_JAG_GET_OUTPUT_VOLTAGE,
+		SEND_MESSAGE_JAG_GET_OUTPUT_CURRENT,
 
 	};
 
@@ -127,6 +128,8 @@ public:
 	};
 
 	typedef GetCANJagMessage GetCANJagBusVoltageMessage;
+	typedef GetCANJagMessage GetCANJagOutputVoltageMessage;
+	typedef GetCANJagMessage GetCANJagOutputCurrentMessage;
 
 private:
 

@@ -202,7 +202,7 @@ double MecanumDrive :: GetPreScaleTranslation ()
 void MecanumDrive :: SetTranslation ( double X, double Y )
 {
 	
-	TX = X * PrescaleT;
+	TX = X * SQRT_2 * PrescaleT;
 	TY = Y * PrescaleT;
 	
 };

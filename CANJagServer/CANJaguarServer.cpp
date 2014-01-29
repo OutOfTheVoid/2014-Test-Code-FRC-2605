@@ -505,7 +505,6 @@ float CANJaguarServer :: GetJag ( CAN_ID ID )
 
 };
 
-//WARNING: Not sure if this one functions at the moment.
 /**
 * Get the Jaguar's bus voltage.
 *
@@ -557,7 +556,7 @@ float CANJaguarServer :: GetJagBusVoltage ( CAN_ID ID )
 	{
 
 		// Acutally a response from JAG_GET_BUS_VOLTAGE?
-		if ( ReceiveMessage -> Command == SEND_MESSAGE_JAG_GET )
+		if ( ReceiveMessage -> Command == SEND_MESSAGE_JAG_GET_BUS_VOLTAGE )
 		{
 
 			// Proper Jaguar message?
@@ -580,6 +579,8 @@ float CANJaguarServer :: GetJagBusVoltage ( CAN_ID ID )
 
 		}
 
+		delete GBVMessage;
+
 	}
 
 	delete ReceiveMessage;
@@ -595,19 +596,145 @@ float CANJaguarServer :: GetJagBusVoltage ( CAN_ID ID )
 float CANJaguarServer :: GetJagOutputVoltage ( CAN_ID ID )
 {
 
+	// Due to needing a response from the server thread, we must aquire the ResponseSemaphore so it doesn't preumpt a currently operating JAG_GET
+	semTake ( ResponseSemaphore, WAIT_FOREVER );
+
 	CANJagServerMessage * SendMessage = new CANJagServerMessage ();
 
 	SendMessage -> Command = SEND_MESSAGE_JAG_GET_OUTPUT_VOLTAGE;
 	SendMessage -> Data = static_cast <uint32_t> ( ID );
 
+	// In order to return quickly, due to the locking nature of Get* functions, we preumpt any pending commands.
 	SendError = ( msgQSend ( MessageSendQueue, reinterpret_cast <char *> ( & SendMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT ) == ERROR );
 
 	if ( SendError )
-		return 0;
+	{
 
-	//----------------------------------------
+		semGive ( ResponseSemaphore );
+		return 0;
+	
+	}
+
 	CANJagServerMessage * ReceiveMessage;
 
+	// Receive message. ( It's imperative that we receive the result due to the preumptive nature of the call. )
+	if ( msgQReceive ( MessageReceiveQueue, reinterpret_cast <char *> ( & ReceiveMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER ) == ERROR )
+	{
+
+		semGive ( ResponseSemaphore );
+		return 0;
+	
+	}
+
+	// We have our response, no longer necessary to lock the ResponseSemaphore
+	semGive ( ResponseSemaphore );
+
+	if ( ReceiveMessage == NULL )
+		return 0;
+
+	// Parse and check response message. Not sure how i'm going to handle this if something inconsistent ends up happening. Could be a response-locked semaphore, but then there's no point in using messaging.
+	GetCANJagOutputVoltageMessage * GOVMessage = reinterpret_cast <GetCANJagOutputVoltageMessage *> ( ReceiveMessage -> Data );
+
+	if ( GOVMessage != NULL )
+	{
+
+		// Acutally a response from JAG_GET_BUS_VOLTAGE?
+		if ( ReceiveMessage -> Command == SEND_MESSAGE_JAG_GET_OUTPUT_VOLTAGE )
+		{
+
+			// Proper Jaguar message?
+			if ( GOVMessage -> ID == ID )
+			{
+
+				float val = GOVMessage -> Value;
+
+				delete GOVMessage;
+				delete ReceiveMessage;
+
+				return val;
+
+			}
+
+		}
+
+		delete GOVMessage;
+
+	}
+
+	delete ReceiveMessage;
+	return 0;
+
+};
+
+float CANJaguarServer :: GetJagOutputCurrent ( CAN_ID ID )
+{
+
+	// Due to needing a response from the server thread, we must aquire the ResponseSemaphore so it doesn't preumpt a currently operating JAG_GET
+	semTake ( ResponseSemaphore, WAIT_FOREVER );
+
+	CANJagServerMessage * SendMessage = new CANJagServerMessage ();
+
+	SendMessage -> Command = SEND_MESSAGE_JAG_GET_OUTPUT_CURRENT;
+	SendMessage -> Data = static_cast <uint32_t> ( ID );
+
+	// In order to return quickly, due to the locking nature of Get* functions, we preumpt any pending commands.
+	SendError = ( msgQSend ( MessageSendQueue, reinterpret_cast <char *> ( & SendMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT ) == ERROR );
+
+	if ( SendError )
+	{
+
+		semGive ( ResponseSemaphore );
+		return 0;
+	
+	}
+
+	CANJagServerMessage * ReceiveMessage;
+
+	// Receive message. ( It's imperative that we receive the result due to the preumptive nature of the call. )
+	if ( msgQReceive ( MessageReceiveQueue, reinterpret_cast <char *> ( & ReceiveMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER ) == ERROR )
+	{
+
+		semGive ( ResponseSemaphore );
+		return 0;
+	
+	}
+
+	// We have our response, no longer necessary to lock the ResponseSemaphore
+	semGive ( ResponseSemaphore );
+
+	if ( ReceiveMessage == NULL )
+		return 0;
+
+	// Parse and check response message. Not sure how i'm going to handle this if something inconsistent ends up happening. Could be a response-locked semaphore, but then there's no point in using messaging.
+	GetCANJagOutputCurrentMessage * GOCMessage = reinterpret_cast <GetCANJagOutputCurrentMessage *> ( ReceiveMessage -> Data );
+
+	if ( GOCMessage != NULL )
+	{
+
+		// Acutally a response from JAG_GET_BUS_CURRENT?
+		if ( ReceiveMessage -> Command == SEND_MESSAGE_JAG_GET_OUTPUT_CURRENT )
+		{
+
+			// Proper Jaguar message?
+			if ( GOCMessage -> ID == ID )
+			{
+
+				float val = GOCMessage -> Value;
+
+				delete GOCMessage;
+				delete ReceiveMessage;
+
+				return val;
+
+			}
+
+		}
+
+		delete GOCMessage;
+
+	}
+
+	delete ReceiveMessage;
 	return 0;
 
 };
@@ -985,13 +1112,81 @@ void CANJaguarServer :: RunLoop ()
 								// Respond with CANJaguar :: GetBusVoltage ()
 								SendMessage = new CANJagServerMessage ();
 
-								volatile GetCANJagBusVoltageMessage * GJBVMessage = new GetCANJagBusVoltageMessage ();
+								GetCANJagBusVoltageMessage * GJBVMessage = new GetCANJagBusVoltageMessage ();
 
 								GJBVMessage -> Value = JagInfo.Jag -> GetBusVoltage ();
 								GJBVMessage -> ID = ID;
 
 								SendMessage -> Command = SEND_MESSAGE_JAG_GET_BUS_VOLTAGE;
 								SendMessage -> Data = reinterpret_cast <uint32_t> ( GJBVMessage );
+
+								msgQSend ( MessageReceiveQueue, reinterpret_cast <char *> ( & SendMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT );
+
+								break;
+
+							}
+
+						}
+
+						delete Message;
+
+						break;
+
+					case SEND_MESSAGE_JAG_GET_OUTPUT_VOLTAGE:
+
+						ID = static_cast <CAN_ID> ( Message -> Data );
+
+						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
+						{
+
+							ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
+
+							if ( JagInfo.ID == ID )
+							{
+
+								SendMessage = new CANJagServerMessage ();
+
+								GetCANJagOutputVoltageMessage * GJOVMessage = new GetCANJagOutputVoltageMessage ();
+
+								GJOVMessage -> Value = JagInfo.Jag -> GetOutputVoltage ();
+								GJOVMessage -> ID = ID;
+
+								SendMessage -> Command = SEND_MESSAGE_JAG_GET_OUTPUT_VOLTAGE;
+								SendMessage -> Data = reinterpret_cast <uint32_t> ( GJOVMessage );
+
+								msgQSend ( MessageReceiveQueue, reinterpret_cast <char *> ( & SendMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT );
+
+								break;
+
+							}
+
+						}
+
+						delete Message;
+
+						break;
+
+					case SEND_MESSAGE_JAG_GET_OUTPUT_CURRENT:
+
+						ID = static_cast <CAN_ID> ( Message -> Data );
+
+						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
+						{
+
+							ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
+
+							if ( JagInfo.ID == ID )
+							{
+
+								SendMessage = new CANJagServerMessage ();
+
+								GetCANJagOutputCurrentMessage * GJOCMessage = new GetCANJagOutputCurrentMessage ();
+
+								GJOCMessage -> Value = JagInfo.Jag -> GetOutputCurrent ();
+								GJOCMessage -> ID = ID;
+
+								SendMessage -> Command = SEND_MESSAGE_JAG_GET_OUTPUT_CURRENT;
+								SendMessage -> Data = reinterpret_cast <uint32_t> ( GJOCMessage );
 
 								msgQSend ( MessageReceiveQueue, reinterpret_cast <char *> ( & SendMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT );
 

@@ -34,6 +34,7 @@ public:
 	void AutonomousRoutine ();
 
 	void TestInit ();
+	void TestPeriodic ();
 
 	static int AutonomousTaskStub ( RobotMainTask * ThisObj );
 

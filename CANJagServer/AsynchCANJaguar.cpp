@@ -50,6 +50,27 @@ float AsynchCANJaguar :: Get ()
 
 };
 
+float AsynchCANJaguar :: GetBusVoltage ()
+{
+
+	return Server -> GetJagBusVoltage ( ID );
+
+};
+
+float AsynchCANJaguar :: GetOutputVoltage ()
+{
+
+	return Server -> GetJagOutputCurrent ( ID );
+
+};
+
+float AsynchCANJaguar :: GetOutputCurrent ()
+{
+
+	return Server -> GetJagOutputCurrent ( ID );
+
+};
+
 void AsynchCANJaguar :: Configure ( CANJagConfigInfo Config )
 {
 

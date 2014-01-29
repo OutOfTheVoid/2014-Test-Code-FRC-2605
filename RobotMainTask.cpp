@@ -95,6 +95,9 @@ void RobotMainTask :: TeleopPeriodic ()
 	Drive -> SetRotation ( JoyFilter -> Compute ( RotateStick -> GetX () ) );
 	Drive -> PushTransform ();
 
+	printf ( "Output Voltage: %f A\n", WheelFL -> GetOutputVoltage () );
+	printf ( "Output Current: %f V\n", WheelFL -> GetOutputCurrent () );
+
 };
 
 // -------------------------------------------- Autonomous -------------------------------------------- //
@@ -158,10 +161,14 @@ int RobotMainTask :: AutonomousTaskStub ( RobotMainTask * MainObj )
 void RobotMainTask :: TestInit ()
 {
 
-	Wait ( 0.1 );
-	WheelFL -> Set ( 0.5 );
-	printf ( "WheelFL Response: Expected: %f, Received: %f\n", 0.5, WheelFL -> Get () );
-	WheelFL -> Set ( 0 );
+
+
+};
+
+void RobotMainTask :: TestPeriodic ()
+{
+
+
 
 };
 
