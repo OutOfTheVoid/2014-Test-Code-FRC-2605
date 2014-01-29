@@ -12,6 +12,7 @@ RobotMainTask :: RobotMainTask ():
 {
 
 	JagServer = new CANJaguarServer ();
+	JagServer -> SetCANBusUpdateInterval ( 0 );
 	JagServer -> Start ();
 
 	WheelJagConfig.Mode = CANJaguar :: kSpeed;
@@ -68,7 +69,8 @@ RobotMainTask :: ~RobotMainTask ()
 void RobotMainTask :: DisabledInit ()
 {
 
-	printf ( "Operating Mode: DISABLED\n" );
+	printf ( "Operating Mode: DISABLED\n%s\n", JagServer -> CheckSendError () ? "==> SendError in last enabled period.!\n" : "" );
+	JagServer -> ClearSendError ();
 
 	AutonomousTask -> Stop ();
 	Drive -> Disable ();
@@ -152,3 +154,14 @@ int RobotMainTask :: AutonomousTaskStub ( RobotMainTask * MainObj )
 	return 0;
 
 };
+
+void RobotMainTask :: TestInit ()
+{
+
+	Wait ( 0.1 );
+	WheelFL -> Set ( 0.5 );
+	printf ( "WheelFL Response: Expected: %f, Received: %f\n", 0.5, WheelFL -> Get () );
+	WheelFL -> Set ( 0 );
+
+};
+

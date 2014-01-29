@@ -51,10 +51,12 @@ public:
 
 	void ConfigJag ( CAN_ID, CANJagConfigInfo );
 
-	void SetJag ( CAN_ID ID, double Speed, uint8_t SyncGroup = 0 );
-	double GetJag ( CAN_ID ID );
+	void SetJag ( CAN_ID ID, float Speed, uint8_t SyncGroup = 0 );
+	float GetJag ( CAN_ID ID );
 
-	double GetJagBusVoltage ( CAN_ID ID );
+	float GetJagBusVoltage ( CAN_ID ID );
+	float GetJagOutputVoltage ( CAN_ID ID );
+	float GetJagOutputCurrent ( CAN_ID ID );
 
 	bool CheckSendError ();
 	void ClearSendError ();
@@ -76,6 +78,7 @@ public:
 		SEND_MESSAGE_JAG_CONFIG,
 		SEND_MESSAGE_JAG_UPDATE_SYNC_GROUP,
 		SEND_MESSAGE_JAG_GET_BUS_VOLTAGE,
+		SEND_MESSAGE_JAG_GET_OUTPUT_VOLTAGE,
 
 	};
 
@@ -100,7 +103,7 @@ public:
 	{
 
 		CAN_ID ID;
-		double Speed;
+		float Speed;
 		uint8_t SyncGroup;
 
 	} SetJagMessage;
@@ -119,7 +122,7 @@ public:
 	{
 
 		CAN_ID ID;
-		double Value;
+		float Value;
 
 	};
 
@@ -137,8 +140,8 @@ private:
 	SEM_ID ResponseSemaphore;
 
 	double CANUpdateInterval;
-
 	double JagCheckInterval;
+
 	bool CheckJags;
 
 	uint32_t ParseWait;

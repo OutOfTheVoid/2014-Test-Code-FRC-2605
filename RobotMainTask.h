@@ -33,6 +33,8 @@ public:
 	void AutonomousPeriodic ();
 	void AutonomousRoutine ();
 
+	void TestInit ();
+
 	static int AutonomousTaskStub ( RobotMainTask * ThisObj );
 
 private:
