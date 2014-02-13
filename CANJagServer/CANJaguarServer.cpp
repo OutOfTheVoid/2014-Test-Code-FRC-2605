@@ -220,12 +220,22 @@ void CANJaguarServer :: Stop ()
 
 				case SEND_MESSAGE_NOP:
 				case SEND_MESSAGE_JAG_DISABLE:
-				case SEND_MESSAGE_JAG_ENABLE:
 				case SEND_MESSAGE_JAG_REMOVE:
 
 					delete Message;
 
 					break;
+
+				case SEND_MESSAGE_JAG_ENABLE:
+
+					{
+
+						EnableCANJagMessage * EJMessage = reinterpret_cast <EnableCANJagMessage *> ( Message -> Data );
+
+						if ( EJMessage != NULL )
+							delete EJMessage;
+
+					}
 
 				case SEND_MESSAGE_JAG_SET:
 
@@ -337,13 +347,18 @@ void CANJaguarServer :: DisableJag ( CAN_ID ID )
 *
 * @param ID Controller ID on the CAN-Bus.
 */
-void CANJaguarServer :: EnableJag ( CAN_ID ID )
+void CANJaguarServer :: EnableJag ( CAN_ID ID, double EncoderInitialPosition )
 {
 
 	CANJagServerMessage * Message = new CANJagServerMessage ();
+
+	EnableCANJagMessage * EJMessage = new EnableCANJagMessage ();
+
+	EJMessage -> EncoderInitialPosition = EncoderInitialPosition;
+	EJMessage -> ID = ID;
 	
 	Message -> Command = SEND_MESSAGE_JAG_ENABLE;
-	Message -> Data = static_cast <uint32_t> ( ID );
+	Message -> Data = reinterpret_cast <uint32_t> ( EJMessage );
 
 	SendError = ( msgQSend ( MessageSendQueue, reinterpret_cast <char *> (  & Message ), sizeof ( CANJagServerMessage * ), CommandWait, MSG_PRI_NORMAL ) == ERROR );
 
@@ -861,7 +876,15 @@ void CANJaguarServer :: RunLoop ()
 					case SEND_MESSAGE_JAG_ENABLE:
 
 						// Which Jaguar?
-						ID = static_cast <CAN_ID> ( Message -> Data );
+						EnableCANJagMessage * EJMessage = reinterpret_cast <EnableCANJagMessage *> ( Message -> Data );
+
+						if ( EJMessage == NULL )
+						{
+
+							delete Message;
+							break;
+
+						}
 
 						// Find it and enable it.
 						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
@@ -869,17 +892,18 @@ void CANJaguarServer :: RunLoop ()
 
 							ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
 
-							if ( JagInfo.ID == ID )
+							if ( JagInfo.ID == EJMessage -> ID )
 							{
 
-								JagInfo.Jag -> EnableControl ();
+								JagInfo.Jag -> EnableControl ( EJMessage -> EncoderInitialPosition );
 
 								break;
 
 							}
 
-					}
+						}
 
+						delete EJMessage;
 						delete Message;
 
 						break;
@@ -895,7 +919,7 @@ void CANJaguarServer :: RunLoop ()
 						{
 
 							delete Message;
-							return;
+							break;
 
 						}
 
@@ -932,7 +956,7 @@ void CANJaguarServer :: RunLoop ()
 						{
 
 							delete Message;
-							return;
+							break;
 
 						}
 

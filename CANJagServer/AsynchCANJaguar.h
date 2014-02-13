@@ -9,7 +9,7 @@
 #include "WPILib.h"
 
 #include "CANJaguarServer.h"
-#include "Util/JaguarUtils.h"
+#include "src/Util/JaguarUtils.h"
 
 class AsynchCANJaguar : public SpeedController
 {
@@ -19,7 +19,7 @@ public:
 	~AsynchCANJaguar ();
 
 	void Disable ();
-	void Enable ();
+	void Enable ( double EncoderInitialPosition = 0.0 );
 
 	void Set ( float Speed, uint8_t SyncGroup = 0 );
 	float Get ();

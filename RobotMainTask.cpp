@@ -16,8 +16,8 @@ RobotMainTask :: RobotMainTask ():
 	JagServer -> Start ();
 
 	WheelJagConfig.Mode = CANJaguar :: kSpeed;
-	WheelJagConfig.P = 0.1200;
-	WheelJagConfig.I = 0.0090;
+	WheelJagConfig.P = 0.1000;
+	WheelJagConfig.I = 0.0095;
 	WheelJagConfig.D = 0.0015;
 	WheelJagConfig.SpeedRef = CANJaguar :: kSpeedRef_QuadEncoder;
 	WheelJagConfig.EncoderLinesPerRev = 360;

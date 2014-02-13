@@ -11,7 +11,7 @@ CANJagConfigInfo :: CANJagConfigInfo ()
 	Mode = CANJaguar :: kVoltage;
 	NeutralAction = CANJaguar :: kNeutralMode_Coast;
 	
-	MaxVoltage = 12;
+	MaxVoltage = 13;
 	Safety = false;
 	
 };

@@ -22,10 +22,10 @@ AsynchCANJaguar :: ~AsynchCANJaguar ()
 
 }
 
-void AsynchCANJaguar :: Enable ()
+void AsynchCANJaguar :: Enable ( double EncoderInitialPosition )
 {
 
-	Server -> EnableJag ( ID );
+	Server -> EnableJag ( ID, EncoderInitialPosition );
 
 };
 

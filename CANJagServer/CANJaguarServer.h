@@ -7,8 +7,8 @@
 */
 
 #include "WPILib.h"
-#include "Util/JaguarUtils.h"
-#include "Util/Vector.h"
+#include "src/Util/JaguarUtils.h"
+#include "src/Util/Vector.h"
 
 #define CANJAGSERVER_PARSE_TIMEOUT_DEFAULT 100
 #define CANJAGSERVER_COMMAND_TIMEOUT_DEFAULT 200
@@ -47,7 +47,7 @@ public:
 	void RemoveJag ( CAN_ID ID );
 
 	void DisableJag ( CAN_ID ID );
-	void EnableJag ( CAN_ID ID );
+	void EnableJag ( CAN_ID ID, double EncoderInitialPosition = 0.0 );
 
 	void ConfigJag ( CAN_ID, CANJagConfigInfo );
 
@@ -90,6 +90,14 @@ public:
 		uint32_t Data;
 
 	} CanJagServerMessage;
+
+	typedef struct EnableCANJagMessage
+	{
+
+		CAN_ID ID;
+		double EncoderInitialPosition;
+
+	} EnableCANJagMessage;
 
 	typedef struct ServerCANJagInfo
 	{
