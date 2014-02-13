@@ -39,7 +39,7 @@ void ConfigCANJaguar ( CANJaguar * Jag, CANJagConfigInfo Conf )
 	case CANJaguar :: kPosition:
 		Jag -> ChangeControlMode ( CANJaguar :: kPosition );
 		Jag -> SetPositionReference ( Conf.PosRef );
-		if ( Conf.PosRef == 0 )
+		if ( Conf.PosRef == CANJaguar :: kPosRef_QuadEncoder )
 			Jag -> ConfigEncoderCodesPerRev ( Conf.EncoderLinesPerRev );
 		else
 			Jag -> ConfigPotentiometerTurns ( Conf.PotentiometerTurnsPerRev );
