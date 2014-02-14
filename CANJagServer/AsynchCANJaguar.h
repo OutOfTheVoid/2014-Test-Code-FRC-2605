@@ -11,18 +11,18 @@
 #include "CANJaguarServer.h"
 #include "src/Util/JaguarUtils.h"
 
-class AsynchCANJaguar : public SpeedController
+class AsynchCANJaguar : public SpeedController, public ErrorBase
 {
 public:
 
 	AsynchCANJaguar ( CANJaguarServer * Server, CAN_ID ID, CANJagConfigInfo Config );
 	~AsynchCANJaguar ();
 
-	void Disable ();
-	void Enable ( double EncoderInitialPosition = 0.0 );
+	virtual void Disable ();
+	virtual void Enable ( double EncoderInitialPosition = 0.0 );
 
-	void Set ( float Speed, uint8_t SyncGroup = 0 );
-	float Get ();
+	virtual void Set ( float Speed, uint8_t SyncGroup = 0 );
+	virtual float Get ();
 
 	float GetBusVoltage ();
 	float GetOutputVoltage ();
@@ -30,7 +30,7 @@ public:
 
 	void Configure ( CANJagConfigInfo Config );
 
-	void PIDWrite ( float Speed );
+	virtual void PIDWrite ( float Speed );
 
 	static void UpdateSyncGroup ( CANJaguarServer * Server, uint8_t SyncGroup );
 
@@ -38,6 +38,8 @@ private:
 
 	CANJaguarServer * Server;
 	CAN_ID ID;
+
+	CANJaguar :: ControlMode LastControlMode;
 
 };
 

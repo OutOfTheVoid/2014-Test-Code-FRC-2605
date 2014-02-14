@@ -13,6 +13,8 @@ AsynchCANJaguar :: AsynchCANJaguar ( CANJaguarServer * Server, CAN_ID ID, CANJag
 
 	Server -> AddJag ( ID, Config );
 
+	LastControlMode = Config.Mode;
+
 };
 
 AsynchCANJaguar :: ~AsynchCANJaguar ()
@@ -76,10 +78,21 @@ void AsynchCANJaguar :: Configure ( CANJagConfigInfo Config )
 
 	Server -> ConfigJag ( ID, Config );
 
+	LastControlMode = Config.Mode; 
+
 };
 
 void AsynchCANJaguar :: PIDWrite ( float Speed )
 {
+
+	if ( LastControlMode != CANJaguar :: kPercentVbus )
+	{
+
+		wpi_setWPIErrorWithContext(IncompatibleMode, "PID only supported in PercentVbus mode");
+		
+		return;
+
+	}
 
 	Set ( Speed );
 
