@@ -53,6 +53,7 @@ public:
 
 	void SetJag ( CAN_ID ID, float Speed, uint8_t SyncGroup = 0 );
 	float GetJag ( CAN_ID ID );
+	float GetJagPosition ( CAN_ID ID );
 
 	float GetJagBusVoltage ( CAN_ID ID );
 	float GetJagOutputVoltage ( CAN_ID ID );
@@ -80,6 +81,7 @@ public:
 		SEND_MESSAGE_JAG_GET_BUS_VOLTAGE,
 		SEND_MESSAGE_JAG_GET_OUTPUT_VOLTAGE,
 		SEND_MESSAGE_JAG_GET_OUTPUT_CURRENT,
+		SEND_MESSAGE_JAG_GET_POSITION
 
 	};
 
@@ -134,7 +136,7 @@ public:
 		float Value;
 
 	};
-
+	typedef GetCANJagMessage GetCANJagPositionMessage;
 	typedef GetCANJagMessage GetCANJagBusVoltageMessage;
 	typedef GetCANJagMessage GetCANJagOutputVoltageMessage;
 	typedef GetCANJagMessage GetCANJagOutputCurrentMessage;

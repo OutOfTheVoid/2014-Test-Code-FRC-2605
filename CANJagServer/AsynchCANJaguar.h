@@ -18,11 +18,12 @@ public:
 	AsynchCANJaguar ( CANJaguarServer * Server, CAN_ID ID, CANJagConfigInfo Config );
 	~AsynchCANJaguar ();
 
-	virtual void Disable ();
-	virtual void Enable ( double EncoderInitialPosition = 0.0 );
+	void Disable ();
+	void Enable ( double EncoderInitialPosition = 0.0 );
 
-	virtual void Set ( float Speed, uint8_t SyncGroup = 0 );
-	virtual float Get ();
+	void Set ( float Speed, uint8_t SyncGroup = 0 );
+	float Get ();
+	float GetPosition ();
 
 	float GetBusVoltage ();
 	float GetOutputVoltage ();

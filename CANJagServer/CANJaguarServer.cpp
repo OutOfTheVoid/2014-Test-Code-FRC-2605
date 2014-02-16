@@ -521,6 +521,88 @@ float CANJaguarServer :: GetJag ( CAN_ID ID )
 };
 
 /**
+* Get the jaguar's position
+*
+* @param ID The CAN id of the Jaguar.
+**/
+
+float CANJaguarServer :: GetJagPosition ( CAN_ID ID )
+{
+
+	// Due to needing a response from the server thread, we must aquire the ResponseSemaphore so it doesn't preumpt a currently operating JAG_GET*
+	semTake ( ResponseSemaphore, WAIT_FOREVER );
+
+	CANJagServerMessage * SendMessage = new CANJagServerMessage ();
+	
+	SendMessage -> Command = SEND_MESSAGE_JAG_GET_POSITION;
+	SendMessage -> Data = static_cast <uint32_t> ( ID );
+
+	// In order to return quickly, due to the locking nature of Get* functions, we preumpt any pending commands.
+	SendError = ( msgQSend ( MessageSendQueue, reinterpret_cast <char *> ( & SendMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT ) == ERROR );
+
+	if ( SendError )
+	{
+
+		semGive ( ResponseSemaphore );
+		return 0;
+	
+	}
+
+	CANJagServerMessage * ReceiveMessage;
+
+	// Receive message. ( It's imperative that we receive the result due to the preumptive nature of the call. )
+	if ( msgQReceive ( MessageReceiveQueue, reinterpret_cast <char *> ( & ReceiveMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER ) == ERROR )
+	{
+
+		semGive ( ResponseSemaphore );
+		return 0;
+	
+	}
+
+	// We have our response, no longer necessary to lock the ResponseSemaphore
+	semGive ( ResponseSemaphore );
+
+	if ( ReceiveMessage == NULL )
+		return 0;
+
+	// Parse and check response message. Not sure how i'm going to handle this if something inconsistent ends up happening. Could be a response-locked semaphore, but then there's no point in using messaging.
+	GetCANJagPositionMessage * GMessage = (GetCANJagPositionMessage *) ReceiveMessage -> Data;
+
+	if ( GMessage != NULL )
+	{
+
+		// Acutally a response from JAG_GET?
+		if ( ReceiveMessage -> Command == SEND_MESSAGE_JAG_GET_POSITION )
+		{
+
+			// Proper Jaguar message?
+			if ( GMessage -> ID == ID )
+			{
+
+				double val = GMessage -> Value;
+
+				delete GMessage;
+				delete ReceiveMessage;
+
+				return val;
+
+			}
+			
+			delete GMessage;
+			delete ReceiveMessage;
+
+			return 0;
+
+		}
+
+	}
+	
+	delete ReceiveMessage;
+	return 0;
+
+};
+
+/**
 * Get the Jaguar's bus voltage.
 *
 * @param ID The CAN id of the Jaguar.
@@ -1215,6 +1297,40 @@ void CANJaguarServer :: RunLoop ()
 								msgQSend ( MessageReceiveQueue, reinterpret_cast <char *> ( & SendMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT );
 
 								break;
+
+							}
+
+						}
+
+						delete Message;
+
+						break;
+
+					case SEND_MESSAGE_JAG_GET_POSITION:
+
+						// Retreive JAG_GET CAN_ID.
+						ID = static_cast <CAN_ID> ( Message -> Data );
+
+						// Find appropriate Jaguar.
+						for ( uint32_t i = 0; i < Jags -> GetLength (); i ++ )
+						{
+
+							ServerCANJagInfo JagInfo = ( * Jags ) [ i ];
+
+							if ( JagInfo.ID == ID )
+							{
+
+								// Respond with CANJaguar :: GetPosition ();
+								SendMessage = new CANJagServerMessage ();
+								volatile GetCANJagPositionMessage * JVMessage = new GetCANJagPositionMessage ();
+
+								JVMessage -> ID = JagInfo.ID;
+								JVMessage -> Value = JagInfo.Jag -> GetPosition ();
+
+								SendMessage -> Command = SEND_MESSAGE_JAG_GET_POSITION;
+								SendMessage -> Data = reinterpret_cast <uint32_t> ( JVMessage );
+
+								msgQSend ( MessageReceiveQueue, reinterpret_cast <char *> ( & SendMessage ), sizeof ( CANJagServerMessage * ), WAIT_FOREVER, MSG_PRI_URGENT );
 
 							}
 

@@ -52,6 +52,13 @@ float AsynchCANJaguar :: Get ()
 
 };
 
+float AsynchCANJaguar :: GetPosition ()
+{
+
+	return Server -> GetJagPosition ( ID );
+
+};
+
 float AsynchCANJaguar :: GetBusVoltage ()
 {
 
