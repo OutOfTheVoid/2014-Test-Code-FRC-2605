@@ -24,8 +24,10 @@ public:
 			InitSize = VECTOR_DEFAULT_SIZE;
 		
 		Data = (T *) malloc ( sizeof ( T ) * InitSize );
+		
 		if ( Data == NULL )
 			throw "NULL allocation.";
+			
 		Size = InitSize;
 		
 		Length = 0;
@@ -133,6 +135,11 @@ private:
 			newSize = postlength + Size;
 		
 		Size = newSize;
+		
+		Data = (T *) realloc ( (void *) Data, Size * sizeof ( T ) );
+		
+		if ( Data == NULL )
+			throw "NULL allocation.";
 		
 	};
 	
